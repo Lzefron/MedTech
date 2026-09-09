@@ -25,7 +25,7 @@ import kotlinx.coroutines.launch
         MedicineEntity::class
     ],
     version = 1,
-    exportSchema = false
+    exportSchema = true
 )
 abstract class MedTrackDatabase : RoomDatabase() {
     abstract fun profileDao(): ProfileDao
@@ -45,7 +45,6 @@ abstract class MedTrackDatabase : RoomDatabase() {
                     "medtrack_database.db"
                 )
                     .addCallback(DatabaseCallback(scope))
-                    .fallbackToDestructiveMigration()
                     .build()
                 INSTANCE = instance
                 instance
@@ -70,14 +69,14 @@ abstract class MedTrackDatabase : RoomDatabase() {
             if (existing != null) return
 
             val defaultProfile = ProfileEntity(
-                name = "Sajib Ahmed",
+                name = "My Health Profile",
                 relationship = "Self",
-                dob = "1994-08-12",
-                gender = "Male",
-                bloodGroup = "B+",
-                emergencyPhone = "+880 1711-223344",
-                allergies = "Penicillin, Sulfa drugs",
-                chronicConditions = "Mild Asthma",
+                dob = "",
+                gender = "",
+                bloodGroup = "",
+                emergencyPhone = "",
+                allergies = "",
+                chronicConditions = "",
                 isDefault = true
             )
             val profileId = database.profileDao().insertProfile(defaultProfile)

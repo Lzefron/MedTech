@@ -40,6 +40,7 @@ fun HomeScreen(
     val activeMeds by viewModel.activeMedicines.collectAsState()
 
     var showProfileDropdown by remember { mutableStateOf(false) }
+    var reportPendingDeletion by remember { mutableStateOf<LabReportEntity?>(null) }
 
     Scaffold(
         topBar = {
@@ -167,7 +168,7 @@ fun HomeScreen(
                     ReportCard(
                         report = report,
                         onClick = { onNavigateToReportDetail(report.id) },
-                        onDelete = { viewModel.deleteReport(report) }
+                        onDelete = { reportPendingDeletion = report }
                     )
                 }
             }
@@ -178,6 +179,30 @@ fun HomeScreen(
                 Spacer(modifier = Modifier.height(24.dp))
             }
         }
+    }
+
+    if (reportPendingDeletion != null) {
+        AlertDialog(
+            onDismissRequest = { reportPendingDeletion = null },
+            title = { Text("Delete Report?") },
+            text = {
+                Text(
+                    "\"${reportPendingDeletion!!.title}\" and all of its test records will be " +
+                        "permanently deleted. This cannot be undone."
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.deleteReport(reportPendingDeletion!!)
+                    reportPendingDeletion = null
+                }) {
+                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { reportPendingDeletion = null }) { Text("Cancel") }
+            }
+        )
     }
 }
 

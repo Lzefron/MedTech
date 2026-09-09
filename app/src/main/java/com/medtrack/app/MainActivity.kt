@@ -8,19 +8,27 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.ui.Modifier
+import androidx.compose.runtime.mutableStateOf
 import androidx.core.content.ContextCompat
 import com.medtrack.app.ui.navigation.MedTrackNavGraph
 import com.medtrack.app.ui.theme.MedTrackTheme
 
 class MainActivity : ComponentActivity() {
 
+    // Set when the user denies POST_NOTIFICATIONS: without it reminders fire
+    // but are never shown, so the denial has to be surfaced, not swallowed.
+    private val notificationPermissionDenied = mutableStateOf(false)
+
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted: Boolean ->
-        // Notification permission handled
+        notificationPermissionDenied.value = !isGranted
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -47,6 +55,25 @@ class MainActivity : ComponentActivity() {
                         labReportRepository = app.labReportRepository,
                         medicineRepository = app.medicineRepository
                     )
+
+                    if (notificationPermissionDenied.value) {
+                        AlertDialog(
+                            onDismissRequest = { notificationPermissionDenied.value = false },
+                            title = { Text("Notifications Disabled") },
+                            text = {
+                                Text(
+                                    "Medicine reminders are scheduled but will not be shown " +
+                                        "without notification permission. Enable notifications for " +
+                                        "MedTrack in system settings to receive dose alerts."
+                                )
+                            },
+                            confirmButton = {
+                                TextButton(onClick = { notificationPermissionDenied.value = false }) {
+                                    Text("OK")
+                                }
+                            }
+                        )
+                    }
                 }
             }
         }

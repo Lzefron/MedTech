@@ -26,6 +26,7 @@ fun ProfileManagementScreen(
 ) {
     val profiles by viewModel.allProfiles.collectAsState()
     var showAddDialog by remember { mutableStateOf(false) }
+    var profilePendingDeletion by remember { mutableStateOf<ProfileEntity?>(null) }
 
     Scaffold(
         topBar = {
@@ -107,7 +108,7 @@ fun ProfileManagementScreen(
                             }
 
                             if (!profile.isDefault) {
-                                IconButton(onClick = { viewModel.deleteProfile(profile) }) {
+                                IconButton(onClick = { profilePendingDeletion = profile }) {
                                     Icon(Icons.Default.DeleteOutline, contentDescription = "Delete", tint = MaterialTheme.colorScheme.error)
                                 }
                             }
@@ -132,6 +133,30 @@ fun ProfileManagementScreen(
                 }
             }
             item { Spacer(modifier = Modifier.height(80.dp)) }
+        }
+
+        if (profilePendingDeletion != null) {
+            AlertDialog(
+                onDismissRequest = { profilePendingDeletion = null },
+                title = { Text("Delete Profile?") },
+                text = {
+                    Text(
+                        "\"${profilePendingDeletion!!.name}\" and all of their reports, test " +
+                            "records, and medicines will be permanently deleted. This cannot be undone."
+                    )
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        viewModel.deleteProfile(profilePendingDeletion!!)
+                        profilePendingDeletion = null
+                    }) {
+                        Text("Delete", color = MaterialTheme.colorScheme.error)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { profilePendingDeletion = null }) { Text("Cancel") }
+                }
+            )
         }
 
         if (showAddDialog) {
@@ -167,6 +192,7 @@ fun AddProfileDialog(
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Full Name") }, modifier = Modifier.fillMaxWidth())
                 OutlinedTextField(value = relationship, onValueChange = { relationship = it }, label = { Text("Relationship (e.g. Father, Mother, Child)") }, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(value = dob, onValueChange = { dob = it }, label = { Text("Date of Birth (YYYY-MM-DD)") }, modifier = Modifier.fillMaxWidth())
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedTextField(value = bloodGroup, onValueChange = { bloodGroup = it }, label = { Text("Blood Group") }, modifier = Modifier.weight(1f))
                     OutlinedTextField(value = gender, onValueChange = { gender = it }, label = { Text("Gender") }, modifier = Modifier.weight(1f))

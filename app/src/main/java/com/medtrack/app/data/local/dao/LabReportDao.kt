@@ -15,7 +15,7 @@ interface LabReportDao {
     @Query("SELECT * FROM lab_reports WHERE id = :id LIMIT 1")
     suspend fun getReportByIdSync(id: Long): LabReportEntity?
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertReport(report: LabReportEntity): Long
 
     @Update

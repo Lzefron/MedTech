@@ -24,7 +24,7 @@ interface MedicineDao {
     @Query("SELECT * FROM medicines WHERE isActive = 1")
     suspend fun getAllActiveMedicinesSync(): List<MedicineEntity>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertMedicine(medicine: MedicineEntity): Long
 
     @Update

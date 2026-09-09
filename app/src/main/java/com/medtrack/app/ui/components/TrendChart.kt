@@ -75,7 +75,9 @@ fun TrendChart(
         return
     }
 
-    var selectedPointIndex by remember { mutableStateOf<Int?>(null) }
+    // Keyed to the data: a stale index from a previous metric (fewer points)
+    // must not survive into sorted[activeIndex], which would crash.
+    var selectedPointIndex by remember(sorted) { mutableStateOf<Int?>(null) }
     val textMeasurer = rememberTextMeasurer()
 
     // Determine value bounds
@@ -223,7 +225,7 @@ fun TrendChart(
         }
 
         // Selected point detail tooltip
-        val activeIndex = selectedPointIndex ?: (sorted.size - 1)
+        val activeIndex = (selectedPointIndex ?: (sorted.size - 1)).coerceIn(0, sorted.size - 1)
         val activeRecord = sorted[activeIndex]
 
         Card(

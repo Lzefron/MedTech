@@ -27,10 +27,10 @@ interface TestRecordDao {
     @Query("SELECT * FROM test_records WHERE profileId = :profileId ORDER BY testDate DESC")
     suspend fun getAllRecordsForProfileSync(profileId: Long): List<TestRecordEntity>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertRecord(record: TestRecordEntity): Long
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertRecords(records: List<TestRecordEntity>)
 
     @Update

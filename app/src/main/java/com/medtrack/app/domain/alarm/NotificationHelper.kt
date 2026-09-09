@@ -32,14 +32,15 @@ object NotificationHelper {
         medicineId: Long,
         medicineName: String,
         dosage: String,
-        mealTiming: String
+        mealTiming: String,
+        slotId: Int = 1
     ) {
         val tapIntent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         }
         val tapPendingIntent = PendingIntent.getActivity(
             context,
-            medicineId.toInt(),
+            AlarmRequestCodes.tap(medicineId),
             tapIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
@@ -51,22 +52,23 @@ object NotificationHelper {
         }
         val takePendingIntent = PendingIntent.getBroadcast(
             context,
-            (medicineId * 10 + 1).toInt(),
+            AlarmRequestCodes.take(medicineId),
             takeIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        // Action: Snooze
+        // Action: Snooze (carries slot id so the re-arm targets the right dose)
         val snoozeIntent = Intent(context, MedicineAlarmReceiver::class.java).apply {
             action = MedicineAlarmReceiver.ACTION_SNOOZE_MEDICINE
             putExtra(MedicineAlarmReceiver.EXTRA_MED_ID, medicineId)
             putExtra(MedicineAlarmReceiver.EXTRA_MED_NAME, medicineName)
             putExtra(MedicineAlarmReceiver.EXTRA_MED_DOSAGE, dosage)
             putExtra(MedicineAlarmReceiver.EXTRA_MED_MEAL, mealTiming)
+            putExtra(MedicineAlarmReceiver.EXTRA_SLOT_ID, slotId)
         }
         val snoozePendingIntent = PendingIntent.getBroadcast(
             context,
-            (medicineId * 10 + 2).toInt(),
+            AlarmRequestCodes.snooze(medicineId),
             snoozeIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
@@ -84,6 +86,6 @@ object NotificationHelper {
             .build()
 
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        notificationManager.notify(medicineId.toInt(), notification)
+        notificationManager.notify(AlarmRequestCodes.notification(medicineId), notification)
     }
 }

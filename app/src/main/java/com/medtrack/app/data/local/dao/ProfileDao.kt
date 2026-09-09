@@ -21,7 +21,7 @@ interface ProfileDao {
     @Query("SELECT * FROM profiles WHERE isDefault = 1 LIMIT 1")
     suspend fun getDefaultProfileSync(): ProfileEntity?
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertProfile(profile: ProfileEntity): Long
 
     @Update

@@ -4,7 +4,6 @@ import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.os.Build
 import com.medtrack.app.data.local.entity.MedicineEntity
 import java.util.Calendar
 
@@ -36,44 +35,29 @@ class MedicineAlarmScheduler(private val context: Context) {
             }
         }
 
-        val intent = Intent(context, MedicineAlarmReceiver::class.java).apply {
+        val intent = alarmIntent(medicine, slotId, hour, minute)
+
+        val pendingIntent = PendingIntent.getBroadcast(
+            context,
+            AlarmRequestCodes.alarm(medicine.id, slotId),
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        AlarmScheduling.schedule(context, calendar.timeInMillis, pendingIntent)
+    }
+
+    /** Intent shared by scheduling, rescheduling and cancellation. */
+    fun alarmIntent(medicine: MedicineEntity, slotId: Int, hour: Int? = null, minute: Int? = null): Intent {
+        return Intent(context, MedicineAlarmReceiver::class.java).apply {
             action = MedicineAlarmReceiver.ACTION_MEDICINE_ALARM
             putExtra(MedicineAlarmReceiver.EXTRA_MED_ID, medicine.id)
             putExtra(MedicineAlarmReceiver.EXTRA_MED_NAME, medicine.name)
             putExtra(MedicineAlarmReceiver.EXTRA_MED_DOSAGE, medicine.dosage)
             putExtra(MedicineAlarmReceiver.EXTRA_MED_MEAL, medicine.mealTiming)
             putExtra(MedicineAlarmReceiver.EXTRA_SLOT_ID, slotId)
-        }
-
-        val requestCode = (medicine.id * 100 + slotId).toInt()
-        val pendingIntent = PendingIntent.getBroadcast(
-            context,
-            requestCode,
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-
-        try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                alarmManager.setExactAndAllowWhileIdle(
-                    AlarmManager.RTC_WAKEUP,
-                    calendar.timeInMillis,
-                    pendingIntent
-                )
-            } else {
-                alarmManager.setExact(
-                    AlarmManager.RTC_WAKEUP,
-                    calendar.timeInMillis,
-                    pendingIntent
-                )
-            }
-        } catch (_: SecurityException) {
-            // In case SCHEDULE_EXACT_ALARM permission is revoked
-            alarmManager.set(
-                AlarmManager.RTC_WAKEUP,
-                calendar.timeInMillis,
-                pendingIntent
-            )
+            if (hour != null) putExtra(MedicineAlarmReceiver.EXTRA_HOUR, hour)
+            if (minute != null) putExtra(MedicineAlarmReceiver.EXTRA_MINUTE, minute)
         }
     }
 
@@ -82,10 +66,9 @@ class MedicineAlarmScheduler(private val context: Context) {
             val intent = Intent(context, MedicineAlarmReceiver::class.java).apply {
                 action = MedicineAlarmReceiver.ACTION_MEDICINE_ALARM
             }
-            val requestCode = (medicine.id * 100 + slotId).toInt()
             val pendingIntent = PendingIntent.getBroadcast(
                 context,
-                requestCode,
+                AlarmRequestCodes.alarm(medicine.id, slotId),
                 intent,
                 PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
             )

@@ -23,8 +23,5 @@ class MedTrackApplication : Application() {
         super.onCreate()
         NotificationHelper.createNotificationChannel(this)
 
-        applicationScope.launch {
-            MedTrackDatabase.populateInitialData(database)
-        }
     }
 }

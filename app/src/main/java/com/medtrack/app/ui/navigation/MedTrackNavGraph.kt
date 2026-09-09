@@ -1,10 +1,14 @@
 package com.medtrack.app.ui.navigation
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -43,15 +47,24 @@ fun MedTrackNavGraph(
 ) {
     val navController = rememberNavController()
 
-    val homeViewModel = remember { HomeViewModel(profileRepository, labReportRepository, medicineRepository) }
-    val reportViewModel = remember { ReportViewModel(labReportRepository) }
-    val trendsViewModel = remember { TrendsViewModel(labReportRepository) }
-    val medicineViewModel = remember { MedicineViewModel(medicineRepository) }
-    val emergencyViewModel = remember { EmergencyViewModel(profileRepository, labReportRepository, medicineRepository) }
-    val profileViewModel = remember { ProfileViewModel(profileRepository) }
+    // viewModel() ties these to the nav graph's ViewModelStore: state survives
+    // configuration changes and onCleared() cancels viewModelScope (the old
+    // remember {} construction lost state on rotation and never cancelled).
+    val homeViewModel: HomeViewModel = viewModel {
+        HomeViewModel(profileRepository, labReportRepository, medicineRepository)
+    }
+    val reportViewModel: ReportViewModel = viewModel { ReportViewModel(labReportRepository) }
+    val trendsViewModel: TrendsViewModel = viewModel { TrendsViewModel(labReportRepository) }
+    val medicineViewModel: MedicineViewModel = viewModel { MedicineViewModel(medicineRepository) }
+    val emergencyViewModel: EmergencyViewModel = viewModel {
+        EmergencyViewModel(profileRepository, labReportRepository, medicineRepository)
+    }
+    val profileViewModel: ProfileViewModel = viewModel { ProfileViewModel(profileRepository) }
 
     val currentProfile by homeViewModel.currentProfile.collectAsState()
-    val activeProfileId = currentProfile?.id ?: 1L
+    // Null until the default profile loads; screens treat null as "loading"
+    // rather than writing against a nonexistent profile id 1.
+    val activeProfileId = currentProfile?.id
 
     val bottomNavItems = listOf(
         BottomNavItem(Screen.Home, Icons.Default.FolderShared, "Vault"),
@@ -69,6 +82,16 @@ fun MedTrackNavGraph(
         Screen.Medicines.route,
         Screen.Emergency.route
     )
+
+    // Hold the UI until the profile (and its id) is loaded; previously a
+    // hardcoded fallback id of 1 could send writes to a nonexistent profile.
+    if (activeProfileId == null) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator()
+        }
+        return
+    }
+    val profileId = activeProfileId
 
     Scaffold(
         bottomBar = {
@@ -116,28 +139,28 @@ fun MedTrackNavGraph(
             composable(Screen.Trends.route) {
                 TrendsScreen(
                     viewModel = trendsViewModel,
-                    profileId = activeProfileId
+                    profileId = profileId
                 )
             }
 
             composable(Screen.Medicines.route) {
                 MedicineScreen(
                     viewModel = medicineViewModel,
-                    profileId = activeProfileId
+                    profileId = profileId
                 )
             }
 
             composable(Screen.Emergency.route) {
                 EmergencyScreen(
                     viewModel = emergencyViewModel,
-                    profileId = activeProfileId
+                    profileId = profileId
                 )
             }
 
             composable(Screen.ReportScan.route) {
                 ReportScanScreen(
                     viewModel = reportViewModel,
-                    profileId = activeProfileId,
+                    profileId = profileId,
                     onNavigateBack = { navController.popBackStack() }
                 )
             }
@@ -145,7 +168,7 @@ fun MedTrackNavGraph(
             composable(Screen.ManualEntry.route) {
                 ManualEntryScreen(
                     viewModel = reportViewModel,
-                    profileId = activeProfileId,
+                    profileId = profileId,
                     onNavigateBack = { navController.popBackStack() }
                 )
             }

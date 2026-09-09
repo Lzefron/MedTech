@@ -1,0 +1,16 @@
+.gradle
+gradle-cache/
+android-home/
+tmp/
+build/
+app/build/
+local.properties
+libmountfix.so
+mountfix.s
+mountfix.o
+fake_mounts
+*.apk
+*.aab
+.idea/
+*.iml
+.DS_Store

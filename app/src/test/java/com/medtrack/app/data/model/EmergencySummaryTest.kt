@@ -12,12 +12,12 @@ class EmergencySummaryTest {
     fun testEmergencyQrPayload() {
         val profile = ProfileEntity(
             id = 1,
-            name = "Sajib Ahmed",
+            name = "John Doe",
             relationship = "Self",
-            dob = "1994-08-12",
+            dob = "1985-05-20",
             gender = "Male",
             bloodGroup = "B+",
-            emergencyPhone = "01711223344",
+            emergencyPhone = "01700000000",
             allergies = "Penicillin",
             chronicConditions = "Asthma"
         )
@@ -43,7 +43,7 @@ class EmergencySummaryTest {
 
         assertTrue(payload.contains("MEDTRACK|EMERGENCY|v1"))
         assertTrue(payload.contains("Blood: B+"))
-        assertTrue(payload.contains("Emergency Call: 01711223344"))
+        assertTrue(payload.contains("Emergency Call: 01700000000"))
         assertTrue(payload.contains("Montelukast 10 mg"))
         assertTrue(payload.contains("Total Cholesterol: 215 mg/dL"))
     }

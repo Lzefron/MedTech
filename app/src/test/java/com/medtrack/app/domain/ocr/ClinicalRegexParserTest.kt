@@ -47,7 +47,7 @@ class ClinicalRegexParserTest {
         val rawReport = """
             POPULAR DIAGNOSTIC CENTRE LTD.
             Date: 2026-08-15
-            Patient: Sajib Ahmed
+            Patient: John Doe
 
             Hemoglobin 14.5 g/dL 13.0 - 17.5
             Platelet Count 245000 /mcL 150000 - 450000

@@ -14,3 +14,6 @@ fake_mounts
 .idea/
 *.iml
 .DS_Store
+
+# Versioned release artifacts (exception to *.apk)
+!releases/medtrack-debug-1.0.0.apk

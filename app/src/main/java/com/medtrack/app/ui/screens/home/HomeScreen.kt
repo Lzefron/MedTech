@@ -1,496 +1,144 @@
 package com.medtrack.app.ui.screens.home
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.medtrack.app.data.local.entity.LabReportEntity
-import com.medtrack.app.data.local.entity.ProfileEntity
-import com.medtrack.app.data.local.entity.TestRecordEntity
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
-    viewModel: HomeViewModel,
-    onNavigateToScan: () -> Unit,
-    onNavigateToManual: () -> Unit,
-    onNavigateToReportDetail: (Long) -> Unit,
-    onNavigateToProfiles: () -> Unit,
-    onNavigateToEmergency: () -> Unit
+    viewModel: HomeViewModel, onNavigateToScan: () -> Unit, onNavigateToManual: () -> Unit,
+    onNavigateToReportDetail: (Long) -> Unit, onNavigateToLauncher: () -> Unit, onNavigateToEmergency: () -> Unit
 ) {
-    val currentProfile by viewModel.currentProfile.collectAsState()
-    val allProfiles by viewModel.allProfiles.collectAsState()
-    val recentReports by viewModel.recentReports.collectAsState()
-    val abnormalRecords by viewModel.recentAbnormalRecords.collectAsState()
-    val activeMeds by viewModel.activeMedicines.collectAsState()
+    val selected by viewModel.selectedProfileId.collectAsState()
+    val current by viewModel.currentProfile.collectAsState()
+    val reportsState by viewModel.recentReports.collectAsState()
+    val flagsState by viewModel.recentAbnormalRecords.collectAsState()
+    val medsState by viewModel.activeMedicines.collectAsState()
+    val error by viewModel.error.collectAsState()
+    val profile = current?.takeIf { it.id == selected }
+    val reports = reportsState.filter { it.profileId == selected }
+    val flags = flagsState.filter { it.profileId == selected }
+    val medicines = medsState.filter { it.profileId == selected }
+    var query by rememberSaveable(selected) { mutableStateOf("") }
+    var showFlags by rememberSaveable(selected) { mutableStateOf(false) }
+    var deleting by remember { mutableStateOf<LabReportEntity?>(null) }
+    val filtered = reports.filter { (it.title + " " + it.labName + " " + it.testDate).contains(query.trim(), ignoreCase = true) }
 
-    var showProfileDropdown by remember { mutableStateOf(false) }
-    var reportPendingDeletion by remember { mutableStateOf<LabReportEntity?>(null) }
-
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.clickable { showProfileDropdown = true }
-                    ) {
-                        Column {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    currentProfile?.name ?: "Personal Vault",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Icon(
-                                    Icons.Default.ArrowDropDown,
-                                    contentDescription = "Switch Profile",
-                                    modifier = Modifier.size(22.dp)
-                                )
-                            }
-                            Text(
-                                "${currentProfile?.relationship ?: "Self"} • Blood: ${currentProfile?.bloodGroup ?: "O+"}",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-
-                        DropdownMenu(
-                            expanded = showProfileDropdown,
-                            onDismissRequest = { showProfileDropdown = false }
-                        ) {
-                            allProfiles.forEach { profile ->
-                                DropdownMenuItem(
-                                    text = { Text("${profile.name} (${profile.relationship})") },
-                                    onClick = {
-                                        viewModel.selectProfile(profile.id)
-                                        showProfileDropdown = false
-                                    },
-                                    leadingIcon = {
-                                        Icon(
-                                            if (profile.id == currentProfile?.id) Icons.Default.Check else Icons.Default.Person,
-                                            contentDescription = null
-                                        )
-                                    }
-                                )
-                            }
-                            HorizontalDivider()
-                            DropdownMenuItem(
-                                text = { Text("Manage Family Profiles", fontWeight = FontWeight.Bold) },
-                                onClick = {
-                                    showProfileDropdown = false
-                                    onNavigateToProfiles()
-                                },
-                                leadingIcon = { Icon(Icons.Default.GroupAdd, contentDescription = null) }
-                            )
+    Scaffold(topBar = {
+        TopAppBar(title = {
+            Column {
+                Text(profile?.name ?: "Health records", fontWeight = FontWeight.Bold)
+                Text("Personal health record", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }, navigationIcon = {
+            IconButton(onClick = onNavigateToLauncher) { Icon(Icons.Default.PeopleAlt, "Choose another profile") }
+        }, actions = {
+            IconButton(onClick = onNavigateToEmergency) { Icon(Icons.Default.HealthAndSafety, "Emergency card") }
+        })
+    }) { padding ->
+        LazyColumn(Modifier.fillMaxSize().padding(padding), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            item {
+                Card(shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)) {
+                    Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Text("A clearer picture of your health", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                        Text("Keep today's results ready for your next appointment.", color = MaterialTheme.colorScheme.onPrimaryContainer)
+                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Button(onClick = onNavigateToScan, modifier = Modifier.weight(1f)) { Icon(Icons.Default.DocumentScanner, null); Spacer(Modifier.width(6.dp)); Text("Scan report") }
+                            OutlinedButton(onClick = onNavigateToManual, modifier = Modifier.weight(1f)) { Text("Type results") }
                         }
                     }
-                },
-                actions = {
-                    IconButton(onClick = onNavigateToEmergency) {
-                        Icon(
-                            Icons.Default.LocalHospital,
-                            contentDescription = "Emergency Card",
-                            tint = MaterialTheme.colorScheme.error
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                )
-            )
-        }
-    ) { padding ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
+                }
+            }
             item {
-                Spacer(modifier = Modifier.height(4.dp))
-                QuickActionBanner(
-                    onScanClick = onNavigateToScan,
-                    onManualClick = onNavigateToManual,
-                    onEmergencyClick = onNavigateToEmergency
-                )
-            }
-
-            // Abnormal Labs Warning Section
-            if (abnormalRecords.isNotEmpty()) {
-                item {
-                    AbnormalAlertSection(records = abnormalRecords)
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    SummaryTile(reports.size.toString(), "Saved reports", Modifier.weight(1f))
+                    SummaryTile(medicines.size.toString(), "Active medicines", Modifier.weight(1f))
                 }
             }
-
-            // Recent Reports Header
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        "Laboratory Reports",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        "${recentReports.size} total",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-
-            if (recentReports.isEmpty()) {
-                item {
-                    EmptyVaultCard(onScanClick = onNavigateToScan, onManualClick = onNavigateToManual)
-                }
-            } else {
-                items(recentReports) { report ->
-                    ReportCard(
-                        report = report,
-                        onClick = { onNavigateToReportDetail(report.id) },
-                        onDelete = { reportPendingDeletion = report }
-                    )
-                }
-            }
-
-            // Active Medication Summary Card
-            item {
-                ActiveMedicationSummary(medicines = activeMeds)
-                Spacer(modifier = Modifier.height(24.dp))
-            }
-        }
-    }
-
-    if (reportPendingDeletion != null) {
-        AlertDialog(
-            onDismissRequest = { reportPendingDeletion = null },
-            title = { Text("Delete Report?") },
-            text = {
-                Text(
-                    "\"${reportPendingDeletion!!.title}\" and all of its test records will be " +
-                        "permanently deleted. This cannot be undone."
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    viewModel.deleteReport(reportPendingDeletion!!)
-                    reportPendingDeletion = null
-                }) {
-                    Text("Delete", color = MaterialTheme.colorScheme.error)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { reportPendingDeletion = null }) { Text("Cancel") }
-            }
-        )
-    }
-}
-
-@Composable
-fun QuickActionBanner(
-    onScanClick: () -> Unit,
-    onManualClick: () -> Unit,
-    onEmergencyClick: () -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
-        shape = RoundedCornerShape(20.dp)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                "Health Vault Actions",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onPrimaryContainer
-            )
-            Text(
-                "Digitize lab documents offline or record manually",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
-            )
-
-            Spacer(modifier = Modifier.height(14.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                QuickActionButton(
-                    icon = Icons.Default.DocumentScanner,
-                    label = "OCR Scan",
-                    onClick = onScanClick,
-                    modifier = Modifier.weight(1f)
-                )
-                QuickActionButton(
-                    icon = Icons.Default.EditNote,
-                    label = "Manual Add",
-                    onClick = onManualClick,
-                    modifier = Modifier.weight(1f)
-                )
-                QuickActionButton(
-                    icon = Icons.Default.QrCode2,
-                    label = "Emergency",
-                    onClick = onEmergencyClick,
-                    modifier = Modifier.weight(1f)
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun QuickActionButton(
-    icon: ImageVector,
-    label: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Button(
-        onClick = onClick,
-        modifier = modifier,
-        shape = RoundedCornerShape(12.dp),
-        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surface),
-        contentPadding = PaddingValues(vertical = 10.dp, horizontal = 4.dp),
-        elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Icon(
-                icon,
-                contentDescription = label,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(24.dp)
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                label,
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-        }
-    }
-}
-
-@Composable
-fun AbnormalAlertSection(records: List<TestRecordEntity>) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.7f)),
-        shape = RoundedCornerShape(16.dp)
-    ) {
-        Column(modifier = Modifier.padding(14.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    Icons.Default.WarningAmber,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    "Out-of-Range Clinical Flags (${records.size})",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.error
-                )
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            records.take(4).forEach { rec ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 3.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        "${rec.canonicalName}:",
-                        style = MaterialTheme.typography.bodySmall,
-                        fontWeight = FontWeight.Medium
-                    )
-                    Text(
-                        "${rec.value} ${rec.unit} (Ref: ${rec.refRangeText ?: "-"})",
-                        style = MaterialTheme.typography.bodySmall,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.error
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun ReportCard(
-    report: LabReportEntity,
-    onClick: () -> Unit,
-    onDelete: () -> Unit
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() },
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-                Box(
-                    modifier = Modifier
-                        .size(44.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        Icons.Default.Description,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                }
-
-                Spacer(modifier = Modifier.width(14.dp))
-
-                Column {
-                    Text(
-                        report.title,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    Text(
-                        "${report.testDate} • ${report.labName.ifBlank { "Diagnostic Lab" }}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-
-            IconButton(onClick = onDelete) {
-                Icon(
-                    Icons.Default.DeleteOutline,
-                    contentDescription = "Delete",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun EmptyVaultCard(onScanClick: () -> Unit, onManualClick: () -> Unit) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Icon(
-                Icons.Default.MedicalServices,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(48.dp)
-            )
-            Spacer(modifier = Modifier.height(10.dp))
-            Text(
-                "Your Medical Vault is Empty",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                "Scan your paper lab results using on-device ML Kit OCR or enter values manually.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
-            )
-            Spacer(modifier = Modifier.height(10.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Button(onClick = onScanClick) {
-                    Text("OCR Scan")
-                }
-                OutlinedButton(onClick = onManualClick) {
-                    Text("Manual Entry")
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun ActiveMedicationSummary(medicines: List<com.medtrack.app.data.local.entity.MedicineEntity>) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                "Active Prescriptions",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-
-            if (medicines.isEmpty()) {
-                Text(
-                    "No active medications scheduled. Add from the Medicines tab.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            } else {
-                medicines.take(3).forEach { med ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text("• ${med.name} (${med.dosage})", style = MaterialTheme.typography.bodyMedium)
-                        Text(
-                            med.mealTiming,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.secondary
-                        )
+            error?.let { message -> item { Text(message, color = MaterialTheme.colorScheme.error) } }
+            if (flags.isNotEmpty()) item {
+                OutlinedCard(onClick = { showFlags = !showFlags }, shape = RoundedCornerShape(18.dp)) {
+                    Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Info, null, tint = MaterialTheme.colorScheme.primary)
+                            Text("  Results to discuss", Modifier.weight(1f), fontWeight = FontWeight.SemiBold)
+                            Icon(if (showFlags) Icons.Default.ExpandLess else Icons.Default.ExpandMore, null)
+                        }
+                        Text("Some recorded values fall outside their saved ranges. This is not a diagnosis.", style = MaterialTheme.typography.bodySmall)
+                        if (showFlags) flags.forEach { row ->
+                            TextButton(onClick = { onNavigateToReportDetail(row.reportId) }) {
+                                Column(Modifier.fillMaxWidth()) {
+                                    Text(row.canonicalName + ": " + row.value + " " + row.unit, fontWeight = FontWeight.SemiBold)
+                                    Text(row.testDate + " · Range: " + row.refRangeText.orEmpty(), style = MaterialTheme.typography.bodySmall)
+                                }
+                            }
+                        }
                     }
                 }
             }
+            item {
+                Text("Your reports", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                if (reports.isNotEmpty()) {
+                    Spacer(Modifier.height(12.dp))
+                    OutlinedTextField(query, { query = it }, label = { Text("Search title, lab or date") }, leadingIcon = { Icon(Icons.Default.Search, null) }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(16.dp))
+                }
+            }
+            if (reports.isEmpty()) item {
+                OutlinedCard(shape = RoundedCornerShape(20.dp)) {
+                    Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Icon(Icons.Default.FolderOpen, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(36.dp))
+                        Text("A fresh start", style = MaterialTheme.typography.titleLarge)
+                        Text("Add your first report when you're ready. Scanned and manually entered results appear here, newest first.")
+                        TextButton(onClick = onNavigateToManual) { Text("Add a result") }
+                    }
+                }
+            } else if (filtered.isEmpty()) item { Text("No reports match this search. Try a different title, lab or date.") }
+            filtered.groupBy { it.testDate.take(7) }.forEach { (month, group) ->
+                item(key = "month-" + month) { Text(month, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                items(group, key = { it.id }) { report ->
+                    Card(onClick = { onNavigateToReportDetail(report.id) }, shape = RoundedCornerShape(18.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+                        Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Description, null, tint = MaterialTheme.colorScheme.primary)
+                            Column(Modifier.weight(1f).padding(horizontal = 12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Text(report.title, fontWeight = FontWeight.SemiBold)
+                                Text(report.testDate, style = MaterialTheme.typography.bodyMedium)
+                                if (report.labName.isNotBlank()) Text(report.labName, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(if (report.imagePath != null) "Original photo saved" else "Manually entered", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                            }
+                            IconButton(onClick = { deleting = report }) { Icon(Icons.Default.DeleteOutline, "Delete " + report.title) }
+                        }
+                    }
+                }
+            }
+            item { Text("Saved on this device", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+        }
+    }
+    deleting?.let { report ->
+        AlertDialog(onDismissRequest = { deleting = null }, title = { Text("Delete this report?") }, text = { Text("The results and saved photo will be permanently removed.") },
+            confirmButton = { TextButton(onClick = { viewModel.deleteReport(report); deleting = null }) { Text("Delete", color = MaterialTheme.colorScheme.error) } },
+            dismissButton = { TextButton(onClick = { deleting = null }) { Text("Keep report") } })
+    }
+}
+
+@Composable
+private fun SummaryTile(value: String, label: String, modifier: Modifier) {
+    Card(modifier, shape = RoundedCornerShape(18.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+        Column(Modifier.padding(16.dp)) {
+            Text(value, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+            Text(label, style = MaterialTheme.typography.bodySmall)
         }
     }
 }

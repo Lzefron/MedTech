@@ -34,6 +34,7 @@ fun EmergencyScreen(
 
     val summary by viewModel.emergencySummary.collectAsState()
     val qrBitmap by viewModel.qrBitmap.collectAsState()
+    val exportError by viewModel.exportError.collectAsState()
 
     Scaffold(
         topBar = {
@@ -53,7 +54,7 @@ fun EmergencyScreen(
             )
         }
     ) { padding ->
-        val profile = summary?.profile
+        val profile = summary?.profile?.takeIf { it.id == profileId }
         if (profile == null) {
             Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
@@ -68,6 +69,7 @@ fun EmergencyScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            if (exportError != null) item { Text(exportError!!, color = MaterialTheme.colorScheme.error) }
             // Patient Emergency Header Card
             item {
                 Card(
@@ -107,7 +109,7 @@ fun EmergencyScreen(
                                     profile.bloodGroup,
                                     color = Color.White,
                                     fontWeight = FontWeight.Black,
-                                    fontSize = 22.sp
+                                    fontSize = if (profile.bloodGroup.length > 3) 12.sp else 22.sp
                                 )
                             }
                         }

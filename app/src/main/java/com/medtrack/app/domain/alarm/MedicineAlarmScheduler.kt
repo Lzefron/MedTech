@@ -22,8 +22,8 @@ class MedicineAlarmScheduler(private val context: Context) {
     private fun scheduleDoseAlarm(medicine: MedicineEntity, timeStr: String, slotId: Int) {
         val parts = timeStr.split(":")
         if (parts.size != 2) return
-        val hour = parts[0].toIntOrNull() ?: 8
-        val minute = parts[1].toIntOrNull() ?: 0
+        val hour = parts[0].toIntOrNull()?.takeIf { it in 0..23 } ?: return
+        val minute = parts[1].toIntOrNull()?.takeIf { it in 0..59 } ?: return
 
         val calendar = Calendar.getInstance().apply {
             set(Calendar.HOUR_OF_DAY, hour)
@@ -62,6 +62,10 @@ class MedicineAlarmScheduler(private val context: Context) {
     }
 
     fun cancelReminders(medicine: MedicineEntity) {
+        val snoozeIntent = Intent(context, MedicineAlarmReceiver::class.java).apply { action = MedicineAlarmReceiver.ACTION_MEDICINE_ALARM }
+        PendingIntent.getBroadcast(context, AlarmRequestCodes.snooze(medicine.id), snoozeIntent,
+            PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE)?.let { alarmManager.cancel(it); it.cancel() }
+        (context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager).cancel(AlarmRequestCodes.notification(medicine.id))
         for (slotId in 1..4) {
             val intent = Intent(context, MedicineAlarmReceiver::class.java).apply {
                 action = MedicineAlarmReceiver.ACTION_MEDICINE_ALARM

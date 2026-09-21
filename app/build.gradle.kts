@@ -10,6 +10,7 @@ android {
 
     defaultConfig {
         applicationId = "com.medtrack.app"
+        manifestPlaceholders["appLabel"] = "@string/app_name"
         minSdk = 26
         targetSdk = 35
         versionCode = 1
@@ -21,7 +22,15 @@ android {
         }
     }
 
+    testBuildType = "qa"
     buildTypes {
+        create("qa") {
+            initWith(getByName("debug"))
+            applicationIdSuffix = ".qa"
+            versionNameSuffix = "-qa"
+            manifestPlaceholders["appLabel"] = "MedTrack QA"
+            matchingFallbacks += listOf("debug")
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(
@@ -63,6 +72,7 @@ dependencies {
     implementation("androidx.room:room-ktx:2.7.2")
     ksp("androidx.room:room-compiler:2.7.2")
 
+    implementation("androidx.exifinterface:exifinterface:1.4.1")
     // ML Kit On-Device Text Recognition
     implementation("com.google.mlkit:text-recognition:16.0.1")
 
@@ -76,4 +86,8 @@ dependencies {
     implementation("com.google.zxing:core:3.5.3")
 
     testImplementation("junit:junit:4.13.2")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
+    androidTestImplementation("androidx.test:runner:1.6.2")
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
 }

@@ -24,7 +24,7 @@ class EmergencyViewModel(
 
     val currentProfile = _currentProfileId.flatMapLatest { id ->
         if (id != null) profileRepository.getProfileById(id)
-        else profileRepository.defaultProfile
+        else flowOf(null)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     val emergencySummary: StateFlow<EmergencySummary?> = currentProfile.flatMapLatest { profile ->
@@ -56,20 +56,26 @@ class EmergencyViewModel(
         _currentProfileId.value = profileId
     }
 
+    val exportError = MutableStateFlow<String?>(null)
     fun exportAndSharePdf(context: Context) {
         val summary = emergencySummary.value ?: return
         viewModelScope.launch {
+            try {
             val allReports = labReportRepository.getReportsForProfile(summary.profile.id).first()
             val allRecords = labReportRepository.getAllRecordsForProfile(summary.profile.id).first()
-            val pdfUri = ClinicalPdfGenerator.generateClinicalReport(
+            val pdfUri = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { ClinicalPdfGenerator.generateClinicalReport(
                 context = context,
                 profile = summary.profile,
                 reports = allReports,
                 allRecords = allRecords,
                 activeMedicines = summary.activeMedicines
             )
+            }
             val shareIntent = ClinicalPdfGenerator.createShareIntent(context, pdfUri)
+            (context as? com.medtrack.app.MainActivity)?.allowExternalReturn()
             context.startActivity(Intent.createChooser(shareIntent, "Share Clinical Medical Summary"))
+            } catch (e: kotlinx.coroutines.CancellationException) { throw e }
+            catch (_: Exception) { exportError.value = "Could not export the summary. Check free storage and retry." }
         }
     }
 }

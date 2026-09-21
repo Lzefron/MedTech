@@ -13,6 +13,8 @@ import androidx.core.view.WindowCompat
 
 private val LightColorScheme = lightColorScheme(
     primary = PrimaryBlue,
+    primaryContainer = androidx.compose.ui.graphics.Color(0xFFD9F0E9),
+    onPrimaryContainer = androidx.compose.ui.graphics.Color(0xFF123D34),
     onPrimary = SurfaceLight,
     secondary = SecondaryTeal,
     onSecondary = SurfaceLight,
@@ -29,7 +31,9 @@ private val LightColorScheme = lightColorScheme(
 )
 
 private val DarkColorScheme = darkColorScheme(
-    primary = PrimaryBlue80,
+    primary = SecondaryTeal80,
+    primaryContainer = androidx.compose.ui.graphics.Color(0xFF184C40),
+    onPrimaryContainer = androidx.compose.ui.graphics.Color(0xFFD9F0E9),
     onPrimary = PrimaryBlueDark,
     secondary = SecondaryTeal80,
     onSecondary = BackgroundDark,
@@ -39,15 +43,16 @@ private val DarkColorScheme = darkColorScheme(
     onSurface = TextPrimaryDark,
     surfaceVariant = SurfaceVariantDark,
     onSurfaceVariant = TextSecondaryDark,
-    error = AlertRed,
-    errorContainer = AlertRedContainer,
+    error = androidx.compose.ui.graphics.Color(0xFFFFB4AB),
+    errorContainer = androidx.compose.ui.graphics.Color(0xFF62332F),
+    onErrorContainer = androidx.compose.ui.graphics.Color(0xFFFFDAD6),
     onError = SurfaceLight
 )
 
 @Composable
 fun MedTrackTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = true,
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {

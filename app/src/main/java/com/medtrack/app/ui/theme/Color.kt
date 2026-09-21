@@ -2,14 +2,14 @@ package com.medtrack.app.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val PrimaryBlue = Color(0xFF0F52BA)
+val PrimaryBlue = Color(0xFF176B59)
 val PrimaryBlueDark = Color(0xFF0A387E)
 val SecondaryTeal = Color(0xFF00897B)
 val TertiaryAmber = Color(0xFFF57C00)
 
-val BackgroundLight = Color(0xFFF8F9FD)
+val BackgroundLight = Color(0xFFF6F8F5)
 val SurfaceLight = Color(0xFFFFFFFF)
-val SurfaceVariantLight = Color(0xFFEFF2F8)
+val SurfaceVariantLight = Color(0xFFEAF0EA)
 
 val TextPrimaryLight = Color(0xFF191C20)
 val TextSecondaryLight = Color(0xFF43474E)

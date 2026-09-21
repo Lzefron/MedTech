@@ -11,5 +11,5 @@ sealed class Screen(val route: String, val title: String) {
     object ReportDetail : Screen("report_detail/{reportId}", "Report Details") {
         fun createRoute(reportId: Long) = "report_detail/$reportId"
     }
-    object ProfileManagement : Screen("profile_management", "Profiles")
+    object ProfileLauncher : Screen("profile_launcher", "Choose a Profile")
 }

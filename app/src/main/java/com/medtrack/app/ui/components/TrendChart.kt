@@ -56,7 +56,7 @@ fun TrendChart(
 
     // Sort by testDate ascending
     val sorted = remember(records) {
-        records.filter { it.numericValue != null }.sortedBy { it.testDate }
+        records.filter { it.numericValue?.isFinite() == true }.sortedBy { it.testDate }
     }
 
     if (sorted.isEmpty()) {
@@ -265,7 +265,7 @@ fun TrendChart(
                     }
                 } else {
                     Badge(containerColor = Color(0xFF2E7D32)) {
-                        Text("IN RANGE", color = Color.White, modifier = Modifier.padding(4.dp))
+                        Text(if (activeRecord.refRangeLow == null && activeRecord.refRangeHigh == null) "NO RANGE" else "WITHIN RANGE", color = Color.White, modifier = Modifier.padding(4.dp))
                     }
                 }
             }

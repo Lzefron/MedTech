@@ -13,15 +13,16 @@ object UnitConverter {
             }
         }
 
+        // AHRQ conversion factors: https://www.ncbi.nlm.nih.gov/books/NBK83505/
         // Cholesterol & Triglycerides: mmol/L <-> mg/dL
         if (metricClean.contains("cholesterol") || metricClean.contains("triglyceride") || metricClean.contains("hdl") || metricClean.contains("ldl")) {
             if (unitClean == "mmol/l" || unitClean == "mmol") {
-                return Pair(value * 38.67, "mg/dL")
+                return Pair(value * if (metricClean.contains("triglyceride")) 88.57 else 38.67, "mg/dL")
             }
         }
 
         // Hemoglobin: g/L <-> g/dL
-        if (metricClean.contains("hemoglobin") || metricClean.contains("hb")) {
+        if (metricClean in listOf("hemoglobin", "haemoglobin", "hb", "hgb")) {
             if (unitClean == "g/l") {
                 return Pair(value / 10.0, "g/dL")
             }

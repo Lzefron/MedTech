@@ -5,19 +5,13 @@ import android.net.Uri
 import androidx.compose.runtime.mutableStateListOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.medtrack.app.data.local.entity.LabReportEntity
-import com.medtrack.app.data.local.entity.TestRecordEntity
+import com.medtrack.app.data.local.entity.*
 import com.medtrack.app.data.model.CanonicalTest
-import com.medtrack.app.data.model.MedicalDictionary
 import com.medtrack.app.data.repository.LabReportRepository
-import com.medtrack.app.domain.ocr.ParsedLabRow
-import com.medtrack.app.domain.ocr.ReportOcrAnalyzer
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import com.medtrack.app.domain.ocr.*
+import com.medtrack.app.domain.validation.HealthInput
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
 
 sealed class OcrUiState {
     object Idle : OcrUiState()
@@ -26,112 +20,126 @@ sealed class OcrUiState {
     data class Error(val message: String) : OcrUiState()
 }
 
-class ReportViewModel(
-    private val labReportRepository: LabReportRepository
-) : ViewModel() {
-
-    private val _ocrState = MutableStateFlow<OcrUiState>(OcrUiState.Idle)
-    val ocrState: StateFlow<OcrUiState> = _ocrState
-
-    var reportTitle = MutableStateFlow("Comprehensive Lab Report")
-    var reportDate = MutableStateFlow(SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date()))
-    var labName = MutableStateFlow("")
-    var notes = MutableStateFlow("")
-    var selectedImageUri = MutableStateFlow<Uri?>(null)
-
+class ReportViewModel(private val labReportRepository: LabReportRepository) : ViewModel() {
+    val ocrState = MutableStateFlow<OcrUiState>(OcrUiState.Idle)
+    val reportTitle = MutableStateFlow("")
+    val reportDate = MutableStateFlow("")
+    val labName = MutableStateFlow("")
+    val notes = MutableStateFlow("")
+    val selectedImageUri = MutableStateFlow<Uri?>(null)
+    val rawText = MutableStateFlow("")
+    val error = MutableStateFlow<String?>(null)
+    val saving = MutableStateFlow(false)
+    val reviewed = MutableStateFlow(false)
     val extractedRows = mutableStateListOf<ParsedLabRow>()
+    private var ocrJob: Job? = null
 
     fun startOcrProcessing(context: Context, uri: Uri) {
+        if (saving.value) return
+        ocrJob?.cancel()
         selectedImageUri.value = uri
-        _ocrState.value = OcrUiState.Processing
-        viewModelScope.launch {
+        extractedRows.clear()
+        reportDate.value = ""
+        labName.value = ""
+        rawText.value = ""
+        error.value = null
+        reviewed.value = false
+        ocrState.value = OcrUiState.Processing
+        ocrJob = viewModelScope.launch {
+            val analyzer = ReportOcrAnalyzer(context.applicationContext)
             try {
-                val analyzer = ReportOcrAnalyzer(context)
                 val result = analyzer.analyzeUri(uri)
-                if (result.detectedDate != null) {
-                    reportDate.value = result.detectedDate
-                }
-                if (result.detectedLab != null) {
-                    labName.value = result.detectedLab
-                    reportTitle.value = "${result.detectedLab} Diagnostic Report"
-                }
-                extractedRows.clear()
+                reportDate.value = result.detectedDate ?: ""
+                labName.value = result.detectedLab ?: ""
+                rawText.value = result.rawText
                 extractedRows.addAll(result.extractedRecords)
-                _ocrState.value = OcrUiState.Success
-            } catch (e: Exception) {
-                _ocrState.value = OcrUiState.Error(e.localizedMessage ?: "OCR processing failed")
-            }
+                ocrState.value = OcrUiState.Success
+            } catch (e: CancellationException) { throw e
+            } catch (_: Exception) { ocrState.value = OcrUiState.Error("Could not read this photo. Try a clear, well-lit JPEG or PNG, or enter results manually.")
+            } finally { analyzer.close() }
         }
     }
 
-    fun addManualRow(test: CanonicalTest, value: String) {
-        val numVal = value.toDoubleOrNull()
-        var isAbnormal = false
-        if (numVal != null) {
-            if (test.normalLow != null && numVal < test.normalLow) isAbnormal = true
-            if (test.normalHigh != null && numVal > test.normalHigh) isAbnormal = true
-        }
+    fun addManualRow(test: CanonicalTest, value: String, unit: String = test.defaultUnit, reference: String = ""): Boolean {
+        val number = HealthInput.number(value)
+        if (number == null) { error.value = "Enter a valid number, such as 14.2. Letters, negative values and infinity are not valid."; return false }
+        if (unit.isBlank()) { error.value = "Enter the unit printed on the report."; return false }
+        val range = HealthInput.range(reference)
+        if (range == null) { error.value = "Use a reference range such as 4–10 or < 200, or leave it blank."; return false }
+        reviewed.value = false
+        extractedRows.add(ParsedLabRow(test.name, test.name, value.trim(), number, unit.trim(), range.low, range.high,
+            reference.trim(), range.outside(number), 1f))
+        error.value = null
+        return true
+    }
 
-        val refText = if (test.normalLow != null && test.normalHigh != null) "${test.normalLow} - ${test.normalHigh}" else ""
-        extractedRows.add(
-            ParsedLabRow(
-                testName = test.name,
-                canonicalName = test.name,
-                value = value,
-                numericValue = numVal,
-                unit = test.defaultUnit,
-                refRangeLow = test.normalLow,
-                refRangeHigh = test.normalHigh,
-                refRangeText = refText,
-                isAbnormal = isAbnormal,
-                confidenceScore = 1.0f
-            )
-        )
+    fun addCustomRow(name: String, value: String): Boolean {
+        if (name.isBlank() || value.isBlank()) { error.value = "Enter both the test name and its written result."; return false }
+        reviewed.value = false
+        extractedRows.add(ParsedLabRow(name.trim(), name.trim(), value.trim(), null, "", null, null, "", false, 1f, isNumeric = false))
+        error.value = null
+        return true
     }
 
     fun updateRow(index: Int, updated: ParsedLabRow) {
-        if (index in extractedRows.indices) {
-            extractedRows[index] = updated
-        }
+        if (index !in extractedRows.indices) return
+        reviewed.value = false
+        val range = HealthInput.range(updated.refRangeText)
+        val number = if (updated.isNumeric) HealthInput.number(updated.value) else null
+        extractedRows[index] = updated.copy(numericValue = number, refRangeLow = range?.low, refRangeHigh = range?.high,
+            isAbnormal = number != null && range?.outside(number) == true)
     }
+    fun removeRow(index: Int) { if (index in extractedRows.indices) { extractedRows.removeAt(index); reviewed.value = false } }
 
-    fun removeRow(index: Int) {
-        if (index in extractedRows.indices) {
-            extractedRows.removeAt(index)
+    fun saveReport(profileId: Long, context: Context? = null, onComplete: () -> Unit) {
+        if (saving.value || ocrState.value is OcrUiState.Processing) return
+        error.value = when {
+            profileId <= 0 -> "Select a profile first."
+            HealthInput.dateError(reportDate.value) != null -> HealthInput.dateError(reportDate.value)
+            extractedRows.isEmpty() -> "Add at least one result before saving."
+            selectedImageUri.value != null && !reviewed.value -> "Compare the results with the original photo and confirm your review."
+            extractedRows.any { it.value.isBlank() || it.canonicalName.isBlank() } -> "Every result needs a name and value."
+            extractedRows.any { it.isNumeric && (it.unit.isBlank() || HealthInput.number(it.value) == null) } -> "Correct invalid numeric results before saving."
+            extractedRows.any { HealthInput.range(it.refRangeText) == null } -> "Correct invalid reference ranges before saving."
+            else -> null
         }
-    }
-
-    fun saveReport(profileId: Long, onComplete: () -> Unit) {
+        if (error.value != null) return
+        saving.value = true
+        // Snapshot before suspension, so edits cannot change the report mid-save.
+        val date = reportDate.value.trim()
+        val title = reportTitle.value.trim().ifBlank { "Lab report · " + date }
+        val lab = labName.value.trim()
+        val reportNotes = notes.value.trim().ifBlank { null }
+        val rows = extractedRows.toList()
+        val photo = selectedImageUri.value
         viewModelScope.launch {
-            val report = LabReportEntity(
-                profileId = profileId,
-                title = reportTitle.value.ifBlank { "Laboratory Diagnostic Report" },
-                testDate = reportDate.value,
-                labName = labName.value,
-                imagePath = selectedImageUri.value?.toString(),
-                notes = notes.value.ifBlank { null }
-            )
-
-            val records = extractedRows.map { row ->
-                TestRecordEntity(
-                    reportId = 0,
-                    profileId = profileId,
-                    testName = row.testName,
-                    canonicalName = row.canonicalName,
-                    value = row.value,
-                    numericValue = row.numericValue,
-                    unit = row.unit,
-                    refRangeLow = row.refRangeLow,
-                    refRangeHigh = row.refRangeHigh,
-                    refRangeText = row.refRangeText,
-                    isAbnormal = row.isAbnormal,
-                    confidenceScore = row.confidenceScore,
-                    testDate = reportDate.value
-                )
+            var stored: String? = null
+            var committed = false
+            try {
+                withContext(NonCancellable) {
+                if (photo != null) {
+                    require(context != null) { "Please reopen the photo before saving." }
+                    stored = withContext(Dispatchers.IO) { DocumentImages.persist(context.applicationContext, photo) }
+                }
+                val report = LabReportEntity(profileId = profileId, title = title, testDate = date, labName = lab, imagePath = stored, notes = reportNotes)
+                val records = rows.map { row ->
+                    val range = HealthInput.range(row.refRangeText)!!
+                    val number = if (row.isNumeric) HealthInput.number(row.value) else null
+                    TestRecordEntity(reportId = 0, profileId = profileId, testName = row.testName, canonicalName = row.canonicalName,
+                        value = row.value.trim(), numericValue = number, unit = row.unit.trim(), refRangeLow = range.low,
+                        refRangeHigh = range.high, refRangeText = row.refRangeText.trim(), isAbnormal = number != null && range.outside(number),
+                        confidenceScore = row.confidenceScore, testDate = date)
+                }
+                labReportRepository.saveReportWithRecords(report, records)
+                committed = true
+                }
+                if (viewModelScope.isActive) onComplete()
+            } catch (e: CancellationException) { throw e
+            } catch (_: Exception) { error.value = "The report was not saved. Check free storage and try again; your draft is still here."
+            } finally {
+                if (!committed && context != null) withContext(NonCancellable + Dispatchers.IO) { DocumentImages.deletePrivate(context, stored) }
+                saving.value = false
             }
-
-            labReportRepository.saveReportWithRecords(report, records)
-            onComplete()
         }
     }
 }

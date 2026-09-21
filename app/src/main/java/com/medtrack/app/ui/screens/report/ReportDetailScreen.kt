@@ -1,130 +1,60 @@
 package com.medtrack.app.ui.screens.report
 
+import android.net.Uri
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.LocalHospital
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.medtrack.app.data.local.entity.LabReportEntity
-import com.medtrack.app.data.local.entity.TestRecordEntity
 import com.medtrack.app.data.repository.LabReportRepository
+import com.medtrack.app.ui.components.DocumentPreview
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ReportDetailScreen(
-    reportId: Long,
-    repository: LabReportRepository,
-    onNavigateBack: () -> Unit
-) {
-    val report by repository.getReportById(reportId).collectAsState(initial = null)
-    val records by repository.getRecordsForReport(reportId).collectAsState(initial = emptyList())
-
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(report?.title ?: "Report Details") },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
-                }
-            )
-        }
-    ) { padding ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
-        ) {
-            report?.let { rep ->
+fun ReportDetailScreen(reportId: Long, repository: LabReportRepository, profileId: Long, onNavigateBack: () -> Unit) {
+    val reportFlow = remember(reportId) { repository.getReportById(reportId) }
+    val recordsFlow = remember(reportId) { repository.getRecordsForReport(reportId) }
+    val report by reportFlow.collectAsState(initial = null)
+    val stored by recordsFlow.collectAsState(initial = emptyList())
+    val records = stored.filter { it.profileId == profileId }
+    var onlyFlagged by remember { mutableStateOf(false) }
+    Scaffold(topBar = { TopAppBar(title = { Text("Report details") }, navigationIcon = { IconButton(onClick = onNavigateBack) { Icon(Icons.Default.ArrowBack, "Back") } }) }) { padding ->
+        LazyColumn(Modifier.fillMaxSize().padding(padding), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            val rep = report?.takeIf { it.profileId == profileId }
+            if (rep == null) {
+                item { Text("Loading report… If it was deleted, return to your records.") }
+            } else {
                 item {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text(
-                                rep.title,
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Text(
-                                "Date: ${rep.testDate} • Lab: ${rep.labName.ifBlank { "Diagnostic Facility" }}",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
-                            )
-                            if (!rep.notes.isNullOrBlank()) {
-                                Spacer(modifier = Modifier.height(6.dp))
-                                Text(
-                                    "Notes: ${rep.notes}",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.9f)
-                                )
-                            }
-                        }
-                    }
+                    Text(rep.title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                    Text(rep.testDate + if (rep.labName.isNotBlank()) " · " + rep.labName else "")
+                    rep.notes?.let { Text(it, Modifier.padding(top = 8.dp)) }
+                    Spacer(Modifier.height(12.dp))
+                    Text(records.size.toString() + " results · " + records.count { it.isAbnormal } + " outside saved ranges", style = MaterialTheme.typography.titleSmall)
+                    Text("Ranges depend on the laboratory and patient. Review results with your clinician.", style = MaterialTheme.typography.bodySmall)
                 }
-            }
-
-            item {
-                Text(
-                    "Laboratory Diagnostics (${records.size})",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-
-            items(records) { rec ->
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = if (rec.isAbnormal) MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.6f)
-                        else MaterialTheme.colorScheme.surface
-                    )
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(14.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(rec.canonicalName, fontWeight = FontWeight.SemiBold)
-                            Text(
-                                "Ref: ${rec.refRangeText ?: "-"}",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-
-                        Column(horizontalAlignment = Alignment.End) {
-                            Text(
-                                "${rec.value} ${rec.unit}",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = if (rec.isAbnormal) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
-                            )
-                            if (rec.isAbnormal) {
-                                Badge(containerColor = MaterialTheme.colorScheme.error) {
-                                    Text("ABNORMAL", color = MaterialTheme.colorScheme.onError, modifier = Modifier.padding(2.dp))
-                                }
-                            }
+                rep.imagePath?.let { path -> item { DocumentPreview(Uri.parse(path)) } }
+                item { FilterChip(selected = onlyFlagged, onClick = { onlyFlagged = !onlyFlagged }, label = { Text("Outside range only") }) }
+                val visible = if (onlyFlagged) records.filter { it.isAbnormal } else records
+                if (visible.isEmpty()) item { Text(if (onlyFlagged) "No results outside saved ranges." else "No results in this report.") }
+                items(visible, key = { it.id }) { record ->
+                    val assessed = record.numericValue != null && (record.refRangeLow != null || record.refRangeHigh != null)
+                    val status = when {
+                        !assessed -> "No range assessment"
+                        record.isAbnormal -> "Outside saved range"
+                        else -> "Within saved range"
+                    }
+                    Card(shape = RoundedCornerShape(18.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+                        Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(record.canonicalName, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                            Text(record.value + " " + record.unit, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                            Text(status, color = if (record.isAbnormal) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text("Reference: " + record.refRangeText?.takeIf { it.isNotBlank() }.orEmpty().ifBlank { "Not recorded" }, style = MaterialTheme.typography.bodySmall)
                         }
                     }
                 }

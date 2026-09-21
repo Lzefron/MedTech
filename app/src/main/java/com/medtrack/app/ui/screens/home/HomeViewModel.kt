@@ -23,16 +23,14 @@ class HomeViewModel(
 
     private val _selectedProfileId = MutableStateFlow<Long?>(null)
 
+    /** Profile explicitly picked on the launcher this session; null until then. */
+    val selectedProfileId: StateFlow<Long?> = _selectedProfileId.asStateFlow()
+
     val currentProfile: StateFlow<ProfileEntity?> = combine(
         allProfiles,
         _selectedProfileId
     ) { profiles, selectedId ->
-        if (profiles.isEmpty()) return@combine null
-        if (selectedId != null) {
-            profiles.find { it.id == selectedId } ?: profiles.firstOrNull { it.isDefault } ?: profiles.first()
-        } else {
-            profiles.firstOrNull { it.isDefault } ?: profiles.first()
-        }
+        profiles.find { it.id == selectedId }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     val recentReports: StateFlow<List<LabReportEntity>> = currentProfile.flatMapLatest { profile ->
@@ -59,13 +57,18 @@ class HomeViewModel(
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    fun clearSelection() { _selectedProfileId.value = null }
+
     fun selectProfile(profileId: Long) {
         _selectedProfileId.value = profileId
     }
 
+    val error = MutableStateFlow<String?>(null)
     fun deleteReport(report: LabReportEntity) {
         viewModelScope.launch {
-            labReportRepository.deleteReport(report)
+            try { labReportRepository.deleteReport(report) }
+            catch (e: kotlinx.coroutines.CancellationException) { throw e }
+            catch (_: Exception) { error.value = "Could not delete the report. Please retry." }
         }
     }
 }

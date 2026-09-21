@@ -1,7 +1,16 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.plugin.compose")
     id("com.google.devtools.ksp")
+}
+
+val releaseSigningFile = rootProject.file("release-secrets/keystore.properties")
+val releaseSigning = Properties().apply {
+    if (releaseSigningFile.exists()) {
+        releaseSigningFile.inputStream().use { releaseInput -> load(releaseInput) }
+    }
 }
 
 android {
@@ -23,6 +32,20 @@ android {
     }
 
     testBuildType = "qa"
+    signingConfigs {
+        create("release") {
+            if (releaseSigningFile.exists()) {
+                storeFile = rootProject.file(requireNotNull(releaseSigning.getProperty("storeFile")))
+                storePassword = requireNotNull(releaseSigning.getProperty("storePassword"))
+                keyAlias = requireNotNull(releaseSigning.getProperty("keyAlias"))
+                keyPassword = requireNotNull(releaseSigning.getProperty("keyPassword"))
+                enableV1Signing = true
+                enableV2Signing = true
+                enableV3Signing = true
+                enableV4Signing = true
+            }
+        }
+    }
     buildTypes {
         create("qa") {
             initWith(getByName("debug"))
@@ -33,6 +56,7 @@ android {
         }
         release {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -67,22 +91,14 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
     implementation("androidx.navigation:navigation-compose:2.8.3")
 
-    // Room Database
     implementation("androidx.room:room-runtime:2.7.2")
     implementation("androidx.room:room-ktx:2.7.2")
     ksp("androidx.room:room-compiler:2.7.2")
 
     implementation("androidx.exifinterface:exifinterface:1.4.1")
-    // ML Kit On-Device Text Recognition
     implementation("com.google.mlkit:text-recognition:16.0.1")
-
-    // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
-
-    // Biometrics
     implementation("androidx.biometric:biometric:1.1.0")
-
-    // QR Code generation
     implementation("com.google.zxing:core:3.5.3")
 
     testImplementation("junit:junit:4.13.2")

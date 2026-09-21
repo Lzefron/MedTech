@@ -16,3 +16,6 @@ fake_mounts
 .DS_Store
 /qa/
 /releases/
+/release-secrets/
+*.jks
+*.keystore

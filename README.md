@@ -10,7 +10,7 @@
 
 MedTrack keeps lab reports, trends, prescribed medicines, and emergency summaries together on the Android device. No account, API key, or remote database is required for its core features.
 
-[Download the latest APK](https://github.com/Lzefron/MedTech/releases/latest) · [View automated builds](https://github.com/Lzefron/MedTech/actions)
+[Download the latest APK](https://github.com/Lzefron/MedTech/releases/latest/download/MedTrack-v1.0.0.apk) · [View all release files](https://github.com/Lzefron/MedTech/releases/latest) · [View automated builds](https://github.com/Lzefron/MedTech/actions)
 
 </div>
 
@@ -37,11 +37,17 @@ MedTrack keeps lab reports, trends, prescribed medicines, and emergency summarie
 ## Install on an Android phone
 
 1. Open [Releases](https://github.com/Lzefron/MedTech/releases/latest) while signed in to GitHub.
-2. Under **Assets**, download `MedTrack-v1.0.0.apk`.
+2. Under **Assets**, download `MedTrack-v1.0.0.apk`. The `.aab` file is only for Google Play Console and cannot be installed directly.
 3. Open the downloaded file on the phone.
 4. If Android asks, allow that browser or file manager to install unknown apps, then choose **Install**.
 
 The current build supports Android 8.0 (API 26) and newer. Installing an update over the existing app preserves local records. Uninstalling the app or clearing its storage removes them.
+
+## Google Play package
+
+Upload **`MedTrack-v1.0.0.aab`** from the latest GitHub Release to Play Console. Its application ID is **`com.medtrack.app`**, version code is **1**, and version name is **1.0.0**. Do not upload the APK when creating a new Play Store app.
+
+The bundle is signed with the private upload key kept outside this repository. See [`docs/PLAY_STORE.md`](docs/PLAY_STORE.md) for the exact release steps, required declarations, and future versioning rules.
 
 ## Privacy and safety
 
@@ -63,6 +69,12 @@ The installable APK is generated at:
 
 ```text
 app/build/outputs/apk/debug/app-debug.apk
+```
+
+Maintainers with the private upload key can generate signed Play and direct-install packages with:
+
+```powershell
+./Build-Play-Release.ps1
 ```
 
 To run the isolated Android emulator tests:
@@ -95,4 +107,3 @@ The local app does not need a server. Optional cross-device synchronization woul
 ## Project notes
 
 The implementation plan is retained in [`PLAN.md`](PLAN.md). The former duplicate `plan (1).md` had the same Git content hash and was removed.
-

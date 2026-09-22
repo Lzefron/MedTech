@@ -11,7 +11,8 @@ import java.util.Locale
 data class ParsedLabRow(
     val testName: String, val canonicalName: String, val value: String, val numericValue: Double?,
     val unit: String, val refRangeLow: Double?, val refRangeHigh: Double?, val refRangeText: String,
-    val isAbnormal: Boolean, val confidenceScore: Float, val warningNote: String? = null, val isNumeric: Boolean = true
+    val isAbnormal: Boolean, val confidenceScore: Float, val warningNote: String? = null, val isNumeric: Boolean = true,
+    val referenceSource: String? = null
 )
 
 object ClinicalRegexParser {

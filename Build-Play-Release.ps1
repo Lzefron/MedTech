@@ -1,10 +1,6 @@
-param(
-    [string]$SecretsFile = (Join-Path $PSScriptRoot 'release-secrets\keystore.properties')
-)
-
 $ErrorActionPreference = 'Stop'
 $projectRoot = $PSScriptRoot
-$secretsPath = [IO.Path]::GetFullPath($SecretsFile)
+$secretsPath = Join-Path $projectRoot 'release-secrets\keystore.properties'
 if (!(Test-Path -LiteralPath $secretsPath)) {
     throw "Release signing configuration is missing: $secretsPath"
 }
@@ -45,8 +41,12 @@ try {
     New-Item -ItemType Directory -Force $releaseDirectory | Out-Null
     $aab = Join-Path $projectRoot 'app\build\outputs\bundle\release\app-release.aab'
     $apk = Join-Path $projectRoot 'app\build\outputs\apk\release\app-release.apk'
-    $publishedAab = Join-Path $releaseDirectory 'MedTrack-v1.0.0.aab'
-    $publishedApk = Join-Path $releaseDirectory 'MedTrack-v1.0.0.apk'
+    $buildText = Get-Content -Raw -LiteralPath (Join-Path $projectRoot 'app\build.gradle.kts')
+    $versionMatch = [regex]::Match($buildText, 'versionName\s*=\s*"([0-9.]+)"')
+    if (!$versionMatch.Success) { throw 'Cannot determine release version.' }
+    $version = $versionMatch.Groups[1].Value
+    $publishedAab = Join-Path $releaseDirectory "MedTrack-v$version.aab"
+    $publishedApk = Join-Path $releaseDirectory "MedTrack-v$version.apk"
     Copy-Item -LiteralPath $aab -Destination $publishedAab -Force
     Copy-Item -LiteralPath $apk -Destination $publishedApk -Force
 

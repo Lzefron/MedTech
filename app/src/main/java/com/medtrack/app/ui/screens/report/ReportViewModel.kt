@@ -60,7 +60,7 @@ class ReportViewModel(private val labReportRepository: LabReportRepository) : Vi
         }
     }
 
-    fun addManualRow(test: CanonicalTest, value: String, unit: String = test.defaultUnit, reference: String = ""): Boolean {
+    fun addManualRow(test: CanonicalTest, value: String, unit: String = test.defaultUnit, reference: String = "", referenceSource: String? = null): Boolean {
         val number = HealthInput.number(value)
         if (number == null) { error.value = "Enter a valid number, such as 14.2. Letters, negative values and infinity are not valid."; return false }
         if (unit.isBlank()) { error.value = "Enter the unit printed on the report."; return false }
@@ -68,7 +68,7 @@ class ReportViewModel(private val labReportRepository: LabReportRepository) : Vi
         if (range == null) { error.value = "Use a reference range such as 4–10 or < 200, or leave it blank."; return false }
         reviewed.value = false
         extractedRows.add(ParsedLabRow(test.name, test.name, value.trim(), number, unit.trim(), range.low, range.high,
-            reference.trim(), range.outside(number), 1f))
+            reference.trim(), range.outside(number), 1f, referenceSource = referenceSource))
         error.value = null
         return true
     }
@@ -128,7 +128,7 @@ class ReportViewModel(private val labReportRepository: LabReportRepository) : Vi
                     TestRecordEntity(reportId = 0, profileId = profileId, testName = row.testName, canonicalName = row.canonicalName,
                         value = row.value.trim(), numericValue = number, unit = row.unit.trim(), refRangeLow = range.low,
                         refRangeHigh = range.high, refRangeText = row.refRangeText.trim(), isAbnormal = number != null && range.outside(number),
-                        confidenceScore = row.confidenceScore, testDate = date)
+                        confidenceScore = row.confidenceScore, testDate = date, referenceSource = row.referenceSource)
                 }
                 labReportRepository.saveReportWithRecords(report, records)
                 committed = true

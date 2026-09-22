@@ -55,6 +55,7 @@ fun ReportDetailScreen(reportId: Long, repository: LabReportRepository, profileI
                             Text(record.value + " " + record.unit, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
                             Text(status, color = if (record.isAbnormal) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant)
                             Text("Reference: " + record.refRangeText?.takeIf { it.isNotBlank() }.orEmpty().ifBlank { "Not recorded" }, style = MaterialTheme.typography.bodySmall)
+                            record.referenceSource?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
                         }
                     }
                 }

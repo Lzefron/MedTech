@@ -32,5 +32,6 @@ data class TestRecordEntity(
     val isAbnormal: Boolean = false,
     val confidenceScore: Float = 1.0f,
     val testDate: String,
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = System.currentTimeMillis(),
+    val referenceSource: String? = null
 )

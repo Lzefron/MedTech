@@ -86,6 +86,7 @@ object ClinicalPdfGenerator {
                     val assessed = record.numericValue != null && (record.refRangeLow != null || record.refRangeHigh != null)
                     val status = if (!assessed) "Not assessed" else if (record.isAbnormal) "Outside saved range" else "Within saved range"
                     line("Reference: " + record.refRangeText.orEmpty().ifBlank { "Not recorded" } + " · " + status)
+                    record.referenceSource?.let { line(it) }
                 }
             }
             finishPage()

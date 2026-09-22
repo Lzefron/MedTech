@@ -10,7 +10,7 @@
 
 MedTrack keeps lab reports, trends, prescribed medicines, and emergency summaries together on the Android device. No account, API key, or remote database is required for its core features.
 
-[Download the latest APK](https://github.com/Lzefron/MedTech/releases/latest/download/MedTrack-v1.0.0.apk) · [View all release files](https://github.com/Lzefron/MedTech/releases/latest) · [View automated builds](https://github.com/Lzefron/MedTech/actions)
+[Download the latest APK](https://github.com/Lzefron/MedTech/releases/latest/download/MedTrack-v1.1.0.apk) · [View all release files](https://github.com/Lzefron/MedTech/releases/latest) · [View automated builds](https://github.com/Lzefron/MedTech/actions)
 
 </div>
 
@@ -23,13 +23,19 @@ MedTrack keeps lab reports, trends, prescribed medicines, and emergency summarie
 | --- | --- | --- |
 | ![MedTrack welcome screen](docs/screenshots/welcome.png) | ![MedTrack records screen](docs/screenshots/records.png) | ![MedTrack report details](docs/screenshots/report-details.png) |
 
+| Test entry and sourced ranges | Clear Today and Skip actions |
+| --- | --- |
+| ![Editable units and sourced reference ranges](docs/screenshots/result-entry.png) | ![Boxed date and optional detail actions](docs/screenshots/optional-details.png) |
+
 ## What it does
+
+Version 1.1 puts test entry first, highlights Today and Skip actions, and offers editable default units with browsable suggestions. General adult ranges fill automatically for supported tests after choosing the applicable adult group in the entry session. Their source is saved with each result. See [reference sources and coverage](docs/REFERENCE_RANGES.md).
 
 - Creates a separate local profile for every family member and asks which profile to use when the app opens.
 - Stores reports and original report photos privately on the device.
 - Scans printed Latin-script lab reports with bundled, offline ML Kit text recognition, then requires the user to review every extracted value.
 - Supports careful manual entry, written results, custom tests, strict dates, Bangla digits, and properly grouped numeric values.
-- Groups reports by month, searches by title, laboratory, or date, and labels results using the reference range saved from that report.
+- Groups reports by month, searches by title, laboratory, or date, and labels results using the saved reference range, with attribution when a general reference is used.
 - Plots comparable numeric results while keeping incompatible units separate.
 - Tracks prescribed medicines and daily reminder times without inventing a dose or schedule.
 - Exports a paginated PDF health summary and emergency information.
@@ -37,7 +43,7 @@ MedTrack keeps lab reports, trends, prescribed medicines, and emergency summarie
 ## Install on an Android phone
 
 1. Open [Releases](https://github.com/Lzefron/MedTech/releases/latest) while signed in to GitHub.
-2. Under **Assets**, download `MedTrack-v1.0.0.apk`. The `.aab` file is only for Google Play Console and cannot be installed directly.
+2. Under **Assets**, download `MedTrack-v1.1.0.apk`. The `.aab` file is only for Google Play Console and cannot be installed directly.
 3. Open the downloaded file on the phone.
 4. If Android asks, allow that browser or file manager to install unknown apps, then choose **Install**.
 
@@ -45,7 +51,7 @@ The current build supports Android 8.0 (API 26) and newer. Installing an update 
 
 ## Google Play package
 
-Upload **`MedTrack-v1.0.0.aab`** from the latest GitHub Release to Play Console. Its application ID is **`com.medtrack.app`**, version code is **1**, and version name is **1.0.0**. Do not upload the APK when creating a new Play Store app.
+Upload **`MedTrack-v1.1.0.aab`** from the latest GitHub Release to Play Console. Its application ID is **`com.medtrack.app`**, version code is **2**, and version name is **1.1.0**. Do not upload the APK when creating a new Play Store app.
 
 The bundle is signed with the private upload key kept outside this repository. See [`docs/PLAY_STORE.md`](docs/PLAY_STORE.md) for the exact release steps, required declarations, and future versioning rules.
 
@@ -59,7 +65,7 @@ Offline recognition is strongest on clear printed reports. Difficult handwriting
 
 ## Build locally
 
-Requirements: JDK 17 and Android SDK 35.
+Requirements: JDK 17 and Android SDK 36.
 
 ```powershell
 ./gradlew.bat :app:testQaUnitTest :app:assembleDebug :app:lintDebug
@@ -87,8 +93,8 @@ The QA application uses the separate `com.medtrack.app.qa` package, so its test 
 
 ## Verification
 
-- 31 JVM tests pass.
-- 7 Android emulator tests pass on Android 15.
+- 36 JVM tests pass.
+- 9 Android emulator tests pass on Android 15.
 - Android lint completes with 0 errors.
 - Emulator coverage includes first-run profile creation, repeated profile selection, profile isolation, invalid input, transactional rollback, copied-photo retention, on-device printed OCR, and multipage PDF export.
 

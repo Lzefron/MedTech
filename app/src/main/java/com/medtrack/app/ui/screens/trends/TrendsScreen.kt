@@ -45,10 +45,10 @@ fun TrendsScreen(viewModel: TrendsViewModel, profileId: Long) {
                     Text(selected, style = MaterialTheme.typography.titleLarge)
                     Spacer(Modifier.height(12.dp))
                     // A range band is meaningful only when all plotted records share that printed range.
-                    val ranges = chartRecords.map { it.refRangeLow to it.refRangeHigh }.distinct()
+                    val ranges = chartRecords.map { Triple(it.refRangeLow, it.refRangeHigh, it.referenceSource) }.distinct()
                     val range = ranges.singleOrNull()
                     TrendChart(chartRecords, range?.first, range?.second, unit.orEmpty())
-                    Text("Points follow report order. Ranges are taken from saved reports; they are not a diagnosis.", style = MaterialTheme.typography.bodySmall)
+                    Text("Points follow report order. Range bands use matching saved ranges and sources; they are not a diagnosis.", style = MaterialTheme.typography.bodySmall)
                 }
                 item { Text("Recorded results", style = MaterialTheme.typography.titleLarge) }
                 items(records.reversed(), key = { it.id }) { record ->
@@ -57,6 +57,7 @@ fun TrendsScreen(viewModel: TrendsViewModel, profileId: Long) {
                             Text(record.testDate, style = MaterialTheme.typography.labelLarge)
                             Text(record.value + " " + record.unit, style = MaterialTheme.typography.titleLarge)
                             Text("Reference: " + record.refRangeText.orEmpty().ifBlank { "Not recorded" })
+                            record.referenceSource?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
                             if (record.isAbnormal) Text("Outside saved range", color = MaterialTheme.colorScheme.error)
                             if (record.numericValue == null) Text("Written result · not plotted", style = MaterialTheme.typography.bodySmall)
                         }

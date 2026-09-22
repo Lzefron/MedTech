@@ -15,15 +15,15 @@ val releaseSigning = Properties().apply {
 
 android {
     namespace = "com.medtrack.app"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.medtrack.app"
         manifestPlaceholders["appLabel"] = "@string/app_name"
         minSdk = 26
-        targetSdk = 35
-        versionCode = 1
-        versionName = "1.0.0"
+        targetSdk = 36
+        versionCode = 2
+        versionName = "1.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -32,6 +32,7 @@ android {
     }
 
     testBuildType = "qa"
+    sourceSets.getByName("androidTest").assets.srcDir("$projectDir/schemas")
     signingConfigs {
         create("release") {
             if (releaseSigningFile.exists()) {
@@ -104,6 +105,7 @@ dependencies {
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
     androidTestImplementation("androidx.test:runner:1.6.2")
+    androidTestImplementation("androidx.room:room-testing:2.7.2")
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
 }

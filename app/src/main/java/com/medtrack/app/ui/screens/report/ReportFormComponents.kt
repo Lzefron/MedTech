@@ -31,10 +31,12 @@ fun ReportFields(viewModel: ReportViewModel) {
             isError = date.isNotBlank() && HealthInput.dateError(date) != null,
             supportingText = { Text(if (date.isBlank()) "Use the date printed on the report." else HealthInput.dateError(date) ?: "Confirm this is the test date, not the birth date.") },
             modifier = Modifier.fillMaxWidth())
-        TextButton(onClick = { viewModel.reportDate.value = LocalDate.now().toString(); viewModel.reviewed.value = false }) { Text("Use today's date") }
-        OutlinedTextField(title, { viewModel.reportTitle.value = it.take(120) }, label = { Text("Title (optional)") }, placeholder = { Text("e.g. Annual checkup") }, modifier = Modifier.fillMaxWidth())
-        OutlinedTextField(lab, { viewModel.labName.value = it.take(120) }, label = { Text("Laboratory (optional)") }, modifier = Modifier.fillMaxWidth())
-        OutlinedTextField(notes, { viewModel.notes.value = it.take(2000) }, label = { Text("Notes for your doctor (optional)") }, modifier = Modifier.fillMaxWidth())
+        OutlinedButton(modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp), onClick = { viewModel.reportDate.value = LocalDate.now().toString(); viewModel.reviewed.value = false }) {
+            Icon(Icons.Default.Today, null); Spacer(Modifier.width(8.dp)); Text("Use today's date")
+        }
+        SkippableField(title, { viewModel.reportTitle.value = it }, "Title (optional)", 120)
+        SkippableField(lab, { viewModel.labName.value = it }, "Laboratory (optional)", 120)
+        SkippableField(notes, { viewModel.notes.value = it }, "Notes for your doctor (optional)", 2000)
     }
 }
 
@@ -56,10 +58,12 @@ fun ExtractedRowCard(row: ParsedLabRow, onUpdate: (ParsedLabRow) -> Unit, onDele
                 supportingText = { if (valueError) Text("Enter a finite, non-negative number.") },
                 keyboardOptions = KeyboardOptions(keyboardType = if (row.isNumeric) KeyboardType.Decimal else KeyboardType.Text))
             if (row.isNumeric) {
-                OutlinedTextField(row.unit, { onUpdate(row.copy(unit = it.take(40))) }, label = { Text("Unit from report *") }, modifier = Modifier.fillMaxWidth(), isError = row.unit.isBlank())
-                OutlinedTextField(row.refRangeText, { onUpdate(row.copy(refRangeText = it.take(80))) },
-                    label = { Text("Printed reference range (optional)") }, modifier = Modifier.fillMaxWidth(), isError = rangeError,
-                    supportingText = { Text(if (rangeError) "Use 4–10, < 200, or leave blank." else "Blank means no range assessment. Ranges vary by lab and patient.") })
+                PickOrTypeField(row.unit, { onUpdate(row.copy(unit = it.take(40), refRangeText = "", referenceSource = null)) },
+                    "Unit from report *", com.medtrack.app.domain.validation.ReferenceCatalog.units(row.canonicalName))
+                OutlinedTextField(row.refRangeText, { onUpdate(row.copy(refRangeText = it.take(80), referenceSource = null)) },
+                    label = { Text("Reference range (optional)") }, modifier = Modifier.fillMaxWidth(), isError = rangeError)
+                OutlinedButton(onClick = { onUpdate(row.copy(refRangeText = "", referenceSource = null)) }) { Text("Skip range") }
+                row.referenceSource?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
             }
             row.warningNote?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
         }
@@ -71,7 +75,7 @@ fun SaveReportBar(viewModel: ReportViewModel, enabled: Boolean = true, onSave: (
     val saving by viewModel.saving.collectAsState()
     val error by viewModel.error.collectAsState()
     Surface(shadowElevation = 6.dp) {
-        Column(Modifier.fillMaxWidth().imePadding().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(Modifier.fillMaxWidth().navigationBarsPadding().imePadding().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
             Button(onClick = onSave, enabled = enabled && !saving && viewModel.extractedRows.isNotEmpty(), modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp), shape = RoundedCornerShape(16.dp)) {
                 Text(if (saving) "Saving on this device…" else "Save " + viewModel.extractedRows.size + " results")
@@ -87,12 +91,15 @@ fun AddScanResultDialog(viewModel: ReportViewModel, onDismiss: () -> Unit) {
     var value by remember { mutableStateOf("") }
     var unit by remember { mutableStateOf("") }
     var range by remember { mutableStateOf("") }
+    var source by remember { mutableStateOf<String?>(null) }
     var written by remember { mutableStateOf(false) }
     val error by viewModel.error.collectAsState()
     AlertDialog(modifier = Modifier.imePadding(), onDismissRequest = onDismiss, title = { Text("Add a missing result") },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(name, { name = it.take(100) }, label = { Text("Test name *") })
+                PickOrTypeField(name, { name = it.take(100); range = ""; source = null }, "Test name *",
+                    com.medtrack.app.data.model.MedicalDictionary.tests.map { it.name },
+                    onPick = { name = it; unit = com.medtrack.app.data.model.MedicalDictionary.tests.first { test -> test.name == it }.defaultUnit; range = ""; source = null }, showLabel = "Show all tests")
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Checkbox(written, { written = it; value = "" })
                     Text("Written result, such as Negative or < 0.5")
@@ -100,8 +107,7 @@ fun AddScanResultDialog(viewModel: ReportViewModel, onDismiss: () -> Unit) {
                 OutlinedTextField(value, { value = it.take(160) }, label = { Text("Result *") },
                     keyboardOptions = KeyboardOptions(keyboardType = if (written) KeyboardType.Text else KeyboardType.Decimal))
                 if (!written) {
-                    OutlinedTextField(unit, { unit = it.take(40) }, label = { Text("Unit from report *") })
-                    OutlinedTextField(range, { range = it.take(80) }, label = { Text("Reference range (optional)") })
+                    UnitAndRangeFields(name, unit, { unit = it }, range, source, { text, origin -> range = text; source = origin })
                 }
                 error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
             }
@@ -110,7 +116,7 @@ fun AddScanResultDialog(viewModel: ReportViewModel, onDismiss: () -> Unit) {
             Button(enabled = name.isNotBlank() && value.isNotBlank(), onClick = {
                 val test = com.medtrack.app.data.model.MedicalDictionary.tests.firstOrNull { it.name.equals(name.trim(), true) || it.aliases.any { alias -> alias.equals(name.trim(), true) } }
                     ?: com.medtrack.app.data.model.CanonicalTest(name.trim(), "Custom test", "", null, null)
-                val added = if (written) viewModel.addCustomRow(name, value) else viewModel.addManualRow(test, value, unit, range)
+                val added = if (written) viewModel.addCustomRow(name, value) else viewModel.addManualRow(test, value, unit, range, source)
                 if (added) onDismiss()
             }) { Text("Add result") }
         }, dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } })

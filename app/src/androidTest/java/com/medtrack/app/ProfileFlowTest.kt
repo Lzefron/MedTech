@@ -89,8 +89,8 @@ class ProfileFlowTest {
         compose.onNodeWithText("Add result").performScrollTo().performClick()
         compose.onNodeWithText("Enter a valid number", substring = true).assertExists()
         compose.onNodeWithText("Measured value *").performTextReplacement("14.2")
-        compose.onNodeWithText("Unit from report *").performScrollTo().performTextInput("g/dL")
-        compose.onNodeWithText("Printed reference range (optional)").performScrollTo().performTextInput("13-17.5")
+        compose.onNodeWithText("Unit from report *").performScrollTo().assertTextContains("g/dL")
+        compose.onNodeWithText("Reference range (optional)").performScrollTo().performTextInput("13-17.5")
         compose.onNodeWithText("Add result").performScrollTo().performClick()
         compose.onNodeWithText("Save 1 results").performClick()
         compose.onNodeWithText("Enter the date printed on the report.").assertExists()
@@ -109,5 +109,41 @@ class ProfileFlowTest {
         compose.onNodeWithText("Lab report · 2024-02-29").performScrollTo().performClick()
         awaitText("Within saved range")
         screenshot("04-report-detail")
+    }
+
+    @Test fun generalRangesFollowUnitsAndKeepTheirSource() {
+        runBlocking { app.profileRepository.insertProfile(ProfileEntity(name = "Reference review", isDefault = true)) }
+        awaitText("Reference review")
+        compose.onNodeWithText("Reference review").performClick()
+        awaitText("Type results")
+        compose.onNodeWithText("Type results").performClick()
+        awaitText("Search test name *")
+        compose.onNodeWithText("Search test name *").assertIsDisplayed().performTextInput("RBC")
+        compose.onNode(hasText("RBC Count") and hasClickAction() and !hasSetTextAction()).performScrollTo().performClick()
+        compose.onNodeWithText("Unit from report *").performScrollTo().assertTextContains("million/mcL")
+        compose.onNodeWithText("General reference").performScrollTo().performClick()
+        compose.onNodeWithText("Adult female").performScrollTo().performClick()
+        screenshot("06-general-reference")
+        compose.onNodeWithText("Reference range (optional)").performScrollTo().assertTextContains("4.2–5.4")
+        compose.onNodeWithText("Unit from report *").performScrollTo().performTextReplacement("10^12/L")
+        compose.onNodeWithText("Reference range (optional)").performScrollTo().assertTextContains("4.2–5.4")
+        compose.onNodeWithText("Unit from report *").performScrollTo().performTextReplacement("unknown")
+        compose.onNodeWithText("Reference range (optional)").performScrollTo().assert(
+            androidx.compose.ui.test.SemanticsMatcher.expectValue(androidx.compose.ui.semantics.SemanticsProperties.EditableText, androidx.compose.ui.text.AnnotatedString("")))
+        compose.onNodeWithText("Unit from report *").performScrollTo().performTextReplacement("million/mcL")
+        compose.onNodeWithText("Reference range (optional)").performScrollTo().assertTextContains("4.2–5.4")
+        compose.onNodeWithText("Measured value *").performScrollTo().performTextInput("4.8")
+        compose.onNodeWithText("Add result").performScrollTo().performClick()
+        compose.onNodeWithText("Use today's date").performScrollTo().performClick()
+        compose.onNodeWithText("Skip title").performScrollTo().performClick()
+        compose.onNodeWithText("Title skipped").assertExists()
+        screenshot("05-entry-date")
+        compose.onNodeWithText("Save 1 results").performClick()
+        awaitText("A clearer picture of your health")
+        val profile = runBlocking { app.profileRepository.getDefaultProfileSync()!! }
+        val row = runBlocking { app.labReportRepository.getAllRecordsForProfileSync(profile.id).single() }
+        assertEquals("4.2–5.4", row.refRangeText)
+        assertTrue(row.referenceSource!!.contains("Adult female"))
+        assertTrue(row.referenceSource!!.contains("https://medlineplus.gov"))
     }
 }

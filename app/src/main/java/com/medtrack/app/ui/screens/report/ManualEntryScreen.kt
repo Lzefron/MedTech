@@ -27,6 +27,8 @@ fun ManualEntryScreen(viewModel: ReportViewModel, profileId: Long, onNavigateBac
     var value by rememberSaveable { mutableStateOf("") }
     var unit by rememberSaveable { mutableStateOf("") }
     var reference by rememberSaveable { mutableStateOf("") }
+    var referenceSource by rememberSaveable { mutableStateOf<String?>(null) }
+    var referenceGroup by rememberSaveable { mutableStateOf("") }
     var written by rememberSaveable { mutableStateOf(false) }
     var discard by remember { mutableStateOf(false) }
     val saving by viewModel.saving.collectAsState()
@@ -37,7 +39,6 @@ fun ManualEntryScreen(viewModel: ReportViewModel, profileId: Long, onNavigateBac
         bottomBar = { SaveReportBar(viewModel) { viewModel.saveReport(profileId, onComplete = onNavigateBack) } }
     ) { padding ->
         LazyColumn(Modifier.fillMaxSize().padding(padding), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            item { ReportFields(viewModel) }
             item {
                 HorizontalDivider()
                 Text("Add a test", style = MaterialTheme.typography.titleLarge)
@@ -45,15 +46,17 @@ fun ManualEntryScreen(viewModel: ReportViewModel, profileId: Long, onNavigateBac
                     FilterChip(selected = !written, onClick = { written = false; value = ""; selectedName = null }, label = { Text("Number") })
                     FilterChip(selected = written, onClick = { written = true; value = ""; selectedName = null }, label = { Text("Written result") })
                 }
-                OutlinedTextField(query, { query = it.take(100); selectedName = null }, label = { Text(if (written) "Test name *" else "Search test name *") }, leadingIcon = { Icon(Icons.Default.Search, null) }, modifier = Modifier.fillMaxWidth())
+                PickOrTypeField(query, { query = it.take(100); selectedName = null; reference = ""; referenceSource = null },
+                    if (written) "Test name *" else "Search test name *",
+                    (MedicalDictionary.search(query) + MedicalDictionary.tests).distinct().map { it.name },
+                    onPick = { name ->
+                        selectedName = name; query = name; unit = MedicalDictionary.tests.first { it.name == name }.defaultUnit
+                        val suggestion = com.medtrack.app.domain.validation.ReferenceCatalog.suggest(name, unit, referenceGroup)
+                        reference = suggestion?.range.orEmpty(); referenceSource = suggestion?.source
+                    },
+                    showLabel = "Show all tests")
                 if (!written && selected == null && query.isNotBlank()) {
-                    MedicalDictionary.search(query).take(6).forEach { test ->
-                        ListItem(headlineContent = { Text(test.name) }, supportingContent = { Text(test.category) },
-                            modifier = Modifier.clickable { selectedName = test.name; query = test.name; unit = ""; reference = "" })
-                    }
-                }
-                if (!written && selected == null && query.isNotBlank()) {
-                    TextButton(onClick = { selectedName = query.trim(); unit = ""; reference = "" }) { Text("Use this name as a custom test") }
+                    OutlinedButton(onClick = { selectedName = query.trim(); unit = ""; reference = ""; referenceSource = null }) { Text("Use this name as a custom test") }
                 }
                 if (written || selected != null) {
                     Spacer(Modifier.height(12.dp))
@@ -62,16 +65,16 @@ fun ManualEntryScreen(viewModel: ReportViewModel, profileId: Long, onNavigateBac
                         isError = !written && value.isNotBlank() && HealthInput.number(value) == null,
                         supportingText = { if (!written && value.isNotBlank() && HealthInput.number(value) == null) Text("Enter a number, such as 14.2 or 250,000.") })
                     if (!written) {
-                        OutlinedTextField(unit, { unit = it.take(40) }, label = { Text("Unit from report *") }, placeholder = { Text(selected?.defaultUnit.orEmpty().ifBlank { "e.g. mg/dL or unitless" }) }, modifier = Modifier.fillMaxWidth())
-                        OutlinedTextField(reference, { reference = it.take(80) }, label = { Text("Printed reference range (optional)") }, modifier = Modifier.fillMaxWidth(),
-                            isError = HealthInput.range(reference) == null, supportingText = { Text("e.g. 4–10 or < 200. Leave blank if not printed.") })
+                        UnitAndRangeFields(selectedName.orEmpty(), unit, { unit = it }, reference, referenceSource,
+                            { text, source -> reference = text; referenceSource = source }, referenceGroup, { referenceGroup = it })
                     } else Text("Written results are saved exactly as entered and are not interpreted or charted.", style = MaterialTheme.typography.bodySmall)
                     Button(onClick = {
-                        val added = if (written) viewModel.addCustomRow(query, value) else selected?.let { viewModel.addManualRow(it, value, unit, reference) } == true
-                        if (added) { value = ""; query = ""; selectedName = null; reference = ""; unit = "" }
+                        val added = if (written) viewModel.addCustomRow(query, value) else selected?.let { viewModel.addManualRow(it, value, unit, reference, referenceSource) } == true
+                        if (added) { value = ""; query = ""; selectedName = null; reference = ""; referenceSource = null; unit = "" }
                     }, enabled = !saving, modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) { Text("Add result") }
                 }
             }
+            item { ReportFields(viewModel) }
             if (viewModel.extractedRows.isNotEmpty()) item { Text("Review your results", style = MaterialTheme.typography.titleLarge) }
             itemsIndexed(viewModel.extractedRows) { index, row ->
                 ExtractedRowCard(row, { viewModel.updateRow(index, it) }, { viewModel.removeRow(index) })

@@ -31,11 +31,16 @@ class ReportViewModel(private val labReportRepository: LabReportRepository) : Vi
     val error = MutableStateFlow<String?>(null)
     val saving = MutableStateFlow(false)
     val reviewed = MutableStateFlow(false)
+    val dateExplanation = MutableStateFlow("")
+    val scanMessage = MutableStateFlow("")
+    val cloudBusy = MutableStateFlow(false)
+    val cloudSuggestion = MutableStateFlow<OcrExtractionResult?>(null)
     val extractedRows = mutableStateListOf<ParsedLabRow>()
     private var ocrJob: Job? = null
+    private var cloudJob: Job? = null
 
     fun startOcrProcessing(context: Context, uri: Uri) {
-        if (saving.value) return
+        if (saving.value || cloudBusy.value) return
         ocrJob?.cancel()
         selectedImageUri.value = uri
         extractedRows.clear()
@@ -44,20 +49,54 @@ class ReportViewModel(private val labReportRepository: LabReportRepository) : Vi
         rawText.value = ""
         error.value = null
         reviewed.value = false
+        cloudSuggestion.value = null
+        scanMessage.value = ""
         ocrState.value = OcrUiState.Processing
         ocrJob = viewModelScope.launch {
             val analyzer = ReportOcrAnalyzer(context.applicationContext)
             try {
                 val result = analyzer.analyzeUri(uri)
                 reportDate.value = result.detectedDate ?: ""
+                dateExplanation.value = result.dateExplanation
                 labName.value = result.detectedLab ?: ""
+                if (reportTitle.value.isBlank()) reportTitle.value = result.detectedTitle.orEmpty()
                 rawText.value = result.rawText
                 extractedRows.addAll(result.extractedRecords)
+                scanMessage.value = "Local reading filled ${result.extractedRecords.size} rows. This is a draft — check the photo, complete missing fields, then save."
                 ocrState.value = OcrUiState.Success
             } catch (e: CancellationException) { throw e
             } catch (_: Exception) { ocrState.value = OcrUiState.Error("Could not read this photo. Try a clear, well-lit JPEG or PNG, or enter results manually.")
             } finally { analyzer.close() }
         }
+    }
+
+    fun requestCloudReading(context: Context) {
+        if (saving.value || cloudBusy.value || ocrState.value is OcrUiState.Processing) return
+        val photo = selectedImageUri.value ?: return
+        val connection = VisionSettings(context).load() ?: run { error.value = "Set up the AI connection first."; return }
+        cloudBusy.value = true; error.value = null; cloudSuggestion.value = null
+        cloudJob = viewModelScope.launch {
+            try {
+                val result = VisionGateway(connection).analyze(context.applicationContext, photo)
+                cloudSuggestion.value = result
+                scanMessage.value = "AI read ${result.extractedRecords.size} rows. Review and fill missing fields below; nothing has been saved yet."
+            } catch (e: CancellationException) { throw e
+            } catch (_: Exception) { error.value = "AI could not complete the reading. Check your connection/settings or try later. Your local results and edits are unchanged." }
+            finally { cloudBusy.value = false }
+        }
+    }
+
+    fun applyCloudReading() {
+        val result = cloudSuggestion.value ?: return
+        val merged = ScanMerge.merge(extractedRows.toList(), result.extractedRecords)
+        extractedRows.clear(); extractedRows.addAll(merged)
+        if (reportDate.value.isBlank()) { reportDate.value = result.detectedDate.orEmpty(); dateExplanation.value = result.dateExplanation }
+        if (labName.value.isBlank()) labName.value = result.detectedLab.orEmpty()
+        if (reportTitle.value.isBlank()) reportTitle.value = result.detectedTitle.orEmpty()
+        rawText.value = (rawText.value + "\n\n" + result.source + " (unverified transcription)\n" + result.rawText).take(125000)
+        reviewed.value = false; cloudSuggestion.value = null
+        ocrState.value = OcrUiState.Success
+        scanMessage.value = "AI filled missing fields and added missing tests. Existing entries were kept; check any differing readings. Save after review."
     }
 
     fun addManualRow(test: CanonicalTest, value: String, unit: String = test.defaultUnit, reference: String = "", referenceSource: String? = null): Boolean {
@@ -92,14 +131,14 @@ class ReportViewModel(private val labReportRepository: LabReportRepository) : Vi
     fun removeRow(index: Int) { if (index in extractedRows.indices) { extractedRows.removeAt(index); reviewed.value = false } }
 
     fun saveReport(profileId: Long, context: Context? = null, onComplete: () -> Unit) {
-        if (saving.value || ocrState.value is OcrUiState.Processing) return
+        if (saving.value || cloudBusy.value || ocrState.value is OcrUiState.Processing) return
         error.value = when {
             profileId <= 0 -> "Select a profile first."
             HealthInput.dateError(reportDate.value) != null -> HealthInput.dateError(reportDate.value)
             extractedRows.isEmpty() -> "Add at least one result before saving."
             selectedImageUri.value != null && !reviewed.value -> "Compare the results with the original photo and confirm your review."
-            extractedRows.any { it.value.isBlank() || it.canonicalName.isBlank() } -> "Every result needs a name and value."
-            extractedRows.any { it.isNumeric && (it.unit.isBlank() || HealthInput.number(it.value) == null) } -> "Correct invalid numeric results before saving."
+            extractedRows.any { it.value.isBlank() || it.canonicalName.isBlank() } -> "Complete or remove result ${extractedRows.indexOfFirst { it.value.isBlank() || it.canonicalName.isBlank() } + 1}: a name and value are required."
+            extractedRows.any { it.isNumeric && (it.unit.isBlank() || HealthInput.number(it.value) == null) } -> "Check result ${extractedRows.indexOfFirst { it.isNumeric && (it.unit.isBlank() || HealthInput.number(it.value) == null) } + 1}: enter a valid number and the printed unit."
             extractedRows.any { HealthInput.range(it.refRangeText) == null } -> "Correct invalid reference ranges before saving."
             else -> null
         }
@@ -112,6 +151,7 @@ class ReportViewModel(private val labReportRepository: LabReportRepository) : Vi
         val reportNotes = notes.value.trim().ifBlank { null }
         val rows = extractedRows.toList()
         val photo = selectedImageUri.value
+        val transcription = rawText.value.takeIf { it.isNotBlank() }
         viewModelScope.launch {
             var stored: String? = null
             var committed = false
@@ -121,7 +161,7 @@ class ReportViewModel(private val labReportRepository: LabReportRepository) : Vi
                     require(context != null) { "Please reopen the photo before saving." }
                     stored = withContext(Dispatchers.IO) { DocumentImages.persist(context.applicationContext, photo) }
                 }
-                val report = LabReportEntity(profileId = profileId, title = title, testDate = date, labName = lab, imagePath = stored, notes = reportNotes)
+                val report = LabReportEntity(profileId = profileId, title = title, testDate = date, labName = lab, imagePath = stored, notes = reportNotes, recognizedText = transcription)
                 val records = rows.map { row ->
                     val range = HealthInput.range(row.refRangeText)!!
                     val number = if (row.isNumeric) HealthInput.number(row.value) else null

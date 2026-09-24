@@ -20,7 +20,7 @@ import com.medtrack.app.data.local.entity.TestRecordEntity
         TestRecordEntity::class,
         MedicineEntity::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = true
 )
 abstract class MedTrackDatabase : RoomDatabase() {
@@ -30,6 +30,11 @@ abstract class MedTrackDatabase : RoomDatabase() {
     abstract fun medicineDao(): MedicineDao
 
     companion object {
+        val MIGRATION_2_3 = object : androidx.room.migration.Migration(2, 3) {
+            override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE lab_reports ADD COLUMN recognizedText TEXT")
+            }
+        }
         val MIGRATION_1_2 = object : androidx.room.migration.Migration(1, 2) {
             override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE test_records ADD COLUMN referenceSource TEXT")
@@ -46,7 +51,7 @@ abstract class MedTrackDatabase : RoomDatabase() {
                     context.applicationContext,
                     MedTrackDatabase::class.java,
                     "medtrack_database.db"
-                ).addMigrations(MIGRATION_1_2).build()
+                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3).build()
                 INSTANCE = instance
                 instance
             }

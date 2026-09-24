@@ -16,8 +16,8 @@ class ScanSafetyTest {
     @Test fun invalidDateIsNotRolledIntoNextMonth() {
         assertNull(ClinicalRegexParser.parseReportText("Date: 2024-02-30").detectedDate)
     }
-    @Test fun ambiguousDatesNeedConfirmation() {
-        assertNull(ClinicalRegexParser.parseReportText("Collection date: 2024-01-01\nReport date: 2024-01-02").detectedDate)
+    @Test fun collectionDateTakesPriorityOverReportPrintingDate() {
+        assertEquals("2024-01-01", ClinicalRegexParser.parseReportText("Collection date: 2024-01-01\nReport date: 2024-01-02").detectedDate)
     }
     @Test fun commaSeparatedPlateletsAreNotTruncated() {
         val row = ClinicalRegexParser.parseLine("Platelet Count 250,000 /mcL 150,000 - 450,000")!!

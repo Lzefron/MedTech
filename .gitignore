@@ -1,5 +1,8 @@
 .gradle
 .kotlin/
+.env
+.env.*
+node_modules/
 gradle-cache/
 android-home/
 tmp/

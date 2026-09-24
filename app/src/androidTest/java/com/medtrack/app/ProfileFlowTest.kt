@@ -1,6 +1,7 @@
 package com.medtrack.app
 
 import androidx.compose.ui.test.*
+import androidx.activity.compose.setContent
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.lifecycle.Lifecycle
@@ -25,12 +26,57 @@ class ProfileFlowTest {
     private fun awaitText(text: String) {
         compose.waitUntil(15000) { compose.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty() }
     }
+    private fun closeKeyboard() {
+        compose.runOnUiThread {
+            val manager = compose.activity.getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
+            manager.hideSoftInputFromWindow(compose.activity.window.decorView.windowToken, 0)
+        }
+        compose.waitUntil(5000) {
+            androidx.core.view.ViewCompat.getRootWindowInsets(compose.activity.window.decorView)?.isVisible(androidx.core.view.WindowInsetsCompat.Type.ime()) != true
+        }
+        compose.waitForIdle()
+    }
     private fun screenshot(name: String) {
         compose.waitForIdle()
         val directory = java.io.File(app.getExternalFilesDir(null), "qa").apply { mkdirs() }
         java.io.File(directory, name + ".png").outputStream().use {
             InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot().compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it)
         }
+    }
+
+    @Test fun scanFieldsAreEditableAndSaveExplainsReviewRequirement() {
+        val vm = com.medtrack.app.ui.screens.report.ReportViewModel(app.labReportRepository)
+        val profile = runBlocking { app.profileRepository.insertProfile(ProfileEntity(name = "Scan UI test", isDefault = true)) }
+        val bitmap = android.graphics.Bitmap.createBitmap(1000, 400, android.graphics.Bitmap.Config.ARGB_8888)
+        android.graphics.Canvas(bitmap).apply {
+            drawColor(android.graphics.Color.WHITE)
+            val paint = android.graphics.Paint().apply { color = android.graphics.Color.BLACK; textSize = 32f }
+            drawText("Report date: 18-Sep-2024", 20f, 60f, paint)
+            drawText("Hemoglobin 14.2 g/dL 12-16", 20f, 150f, paint)
+        }
+        val file = java.io.File(app.cacheDir, "scan-ui.png")
+        file.outputStream().use { bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }; bitmap.recycle()
+        compose.runOnUiThread {
+            compose.activity.setContent {
+                com.medtrack.app.ui.theme.MedTrackTheme {
+                    com.medtrack.app.ui.screens.report.ReportScanScreen(vm, profile, onNavigateBack = {}, onManualEntry = {})
+                }
+            }
+            vm.startOcrProcessing(app, android.net.Uri.fromFile(file))
+        }
+        compose.waitUntil(60000) { vm.ocrState.value is com.medtrack.app.ui.screens.report.OcrUiState.Success }
+        compose.onNode(hasScrollAction()).performScrollToNode(hasText("Result *"))
+        compose.onNodeWithText("Result *").performScrollTo().assertTextContains("14.2").performTextReplacement("13.8")
+        compose.onNodeWithText("Test name *").performScrollTo().assertTextContains("Hemoglobin")
+        screenshot("07-editable-scan")
+        compose.onNodeWithText("Save 1 results").performClick()
+        compose.onNodeWithText("Compare the results with the original photo and confirm your review.").assertExists()
+        compose.onNode(isToggleable()).performClick()
+        compose.onNodeWithText("Save 1 results").performClick()
+        compose.waitUntil(15000) { !vm.saving.value && runBlocking { app.labReportRepository.getAllRecordsForProfileSync(profile).size } == 1 }
+        val saved = runBlocking { app.labReportRepository.getAllRecordsForProfileSync(profile).single() }
+        assertEquals("13.8", saved.value); assertEquals("2024-09-18", saved.testDate)
+        file.delete()
     }
 
     @Test fun freshInstallCreatesOnlyNamedProfileAndReturnsToChooser() {
@@ -86,11 +132,14 @@ class ProfileFlowTest {
         compose.onNodeWithText("Search test name *").performScrollTo().performTextInput("Hemoglobin")
         compose.onNode(hasText("Hemoglobin") and hasClickAction() and !hasSetTextAction()).performScrollTo().performClick()
         compose.onNodeWithText("Measured value *").performScrollTo().performTextInput("abc")
+        closeKeyboard()
         compose.onNodeWithText("Add result").performScrollTo().performClick()
+        screenshot("08-invalid-input")
         compose.onNodeWithText("Enter a valid number", substring = true).assertExists()
         compose.onNodeWithText("Measured value *").performTextReplacement("14.2")
         compose.onNodeWithText("Unit from report *").performScrollTo().assertTextContains("g/dL")
         compose.onNodeWithText("Reference range (optional)").performScrollTo().performTextInput("13-17.5")
+        closeKeyboard()
         compose.onNodeWithText("Add result").performScrollTo().performClick()
         compose.onNodeWithText("Save 1 results").performClick()
         compose.onNodeWithText("Enter the date printed on the report.").assertExists()

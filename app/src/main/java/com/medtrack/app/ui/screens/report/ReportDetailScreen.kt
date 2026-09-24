@@ -24,6 +24,7 @@ fun ReportDetailScreen(reportId: Long, repository: LabReportRepository, profileI
     val stored by recordsFlow.collectAsState(initial = emptyList())
     val records = stored.filter { it.profileId == profileId }
     var onlyFlagged by remember { mutableStateOf(false) }
+    var showRecognized by remember { mutableStateOf(false) }
     Scaffold(topBar = { TopAppBar(title = { Text("Report details") }, navigationIcon = { IconButton(onClick = onNavigateBack) { Icon(Icons.Default.ArrowBack, "Back") } }) }) { padding ->
         LazyColumn(Modifier.fillMaxSize().padding(padding), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             val rep = report?.takeIf { it.profileId == profileId }
@@ -39,6 +40,10 @@ fun ReportDetailScreen(reportId: Long, repository: LabReportRepository, profileI
                     Text("Ranges depend on the laboratory and patient. Review results with your clinician.", style = MaterialTheme.typography.bodySmall)
                 }
                 rep.imagePath?.let { path -> item { DocumentPreview(Uri.parse(path)) } }
+                rep.recognizedText?.let { text -> item {
+                    OutlinedButton(onClick = { showRecognized = !showRecognized }) { Text(if (showRecognized) "Hide saved scan text" else "Show saved scan text") }
+                    if (showRecognized) Text("Unverified transcription; the reviewed results below are your saved record.\n\n$text", style = MaterialTheme.typography.bodySmall)
+                } }
                 item { FilterChip(selected = onlyFlagged, onClick = { onlyFlagged = !onlyFlagged }, label = { Text("Outside range only") }) }
                 val visible = if (onlyFlagged) records.filter { it.isAbnormal } else records
                 if (visible.isEmpty()) item { Text(if (onlyFlagged) "No results outside saved ranges." else "No results in this report.") }

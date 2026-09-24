@@ -19,9 +19,12 @@ class MigrationTest {
             execSQL("INSERT INTO test_records (id,reportId,profileId,testName,canonicalName,value,numericValue,unit,refRangeLow,refRangeHigh,refRangeText,isAbnormal,confidenceScore,testDate,createdAt) VALUES (1,1,1,'Hb','Hemoglobin','14',14,'g/dL',12,16,'12-16',0,1,'2024-01-01',0)")
             close()
         }
-        helper.runMigrationsAndValidate("migration-reference-test", 2, true, MedTrackDatabase.MIGRATION_1_2).apply {
+        helper.runMigrationsAndValidate("migration-reference-test", 3, true, MedTrackDatabase.MIGRATION_1_2, MedTrackDatabase.MIGRATION_2_3).apply {
             query("SELECT value, refRangeText, referenceSource FROM test_records WHERE id = 1").use {
                 assertTrue(it.moveToFirst()); assertEquals("14", it.getString(0)); assertEquals("12-16", it.getString(1)); assertTrue(it.isNull(2))
+            }
+            query("SELECT title, recognizedText FROM lab_reports WHERE id = 1").use {
+                assertTrue(it.moveToFirst()); assertEquals("Original report", it.getString(0)); assertTrue(it.isNull(1))
             }
             close()
         }

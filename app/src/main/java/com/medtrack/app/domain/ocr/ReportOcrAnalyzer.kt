@@ -13,7 +13,8 @@ import kotlinx.coroutines.withContext
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
-data class OcrExtractionResult(val rawText: String, val detectedDate: String?, val detectedLab: String?, val extractedRecords: List<ParsedLabRow>)
+data class OcrExtractionResult(val rawText: String, val detectedDate: String?, val detectedLab: String?, val extractedRecords: List<ParsedLabRow>,
+    val dateExplanation: String = "Check the date against the photo.", val source: String = "On-device OCR", val detectedTitle: String? = null)
 
 class ReportOcrAnalyzer(private val context: Context) : AutoCloseable {
     private val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)

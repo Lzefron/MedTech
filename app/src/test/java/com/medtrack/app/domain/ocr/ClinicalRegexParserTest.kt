@@ -121,14 +121,14 @@ class ClinicalRegexParserTest {
     }
 
     @Test
-    fun testMmolPerLGlucoseConvertedToMgPerDl() {
+    fun testScannedGlucoseKeepsPrintedValueAndUnit() {
         val parsed = ClinicalRegexParser.parseLine("Fasting Blood Sugar 6.0 mmol/L 3.9 - 5.5")
         assertNotNull(parsed)
         assertEquals("Fasting Blood Glucose", parsed!!.canonicalName)
-        assertEquals("mg/dL", parsed.unit)
-        assertEquals(6.0 * 18.0182, parsed.numericValue!!, 0.01)
-        assertEquals(3.9 * 18.0182, parsed.refRangeLow!!, 0.01)
-        assertEquals(5.5 * 18.0182, parsed.refRangeHigh!!, 0.01)
+        assertEquals("mmol/L", parsed.unit)
+        assertEquals(6.0, parsed.numericValue!!, 0.01)
+        assertEquals(3.9, parsed.refRangeLow!!, 0.01)
+        assertEquals(5.5, parsed.refRangeHigh!!, 0.01)
         // 6.0 mmol/L (~108 mg/dL) is above the 5.5 mmol/L (~99 mg/dL) upper bound
         assertTrue(parsed.isAbnormal)
     }

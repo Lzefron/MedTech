@@ -25,5 +25,6 @@ data class LabReportEntity(
     val labName: String = "",
     val imagePath: String? = null,
     val notes: String? = null,
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = System.currentTimeMillis(),
+    val recognizedText: String? = null
 )

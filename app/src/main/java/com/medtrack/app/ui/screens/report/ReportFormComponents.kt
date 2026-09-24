@@ -24,8 +24,10 @@ fun ReportFields(viewModel: ReportViewModel) {
     val date by viewModel.reportDate.collectAsState()
     val lab by viewModel.labName.collectAsState()
     val notes by viewModel.notes.collectAsState()
+    val dateExplanation by viewModel.dateExplanation.collectAsState()
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text("Report details", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+        if (dateExplanation.isNotBlank()) Text(dateExplanation, style = MaterialTheme.typography.bodySmall)
         OutlinedTextField(date, { viewModel.reportDate.value = it.take(10); viewModel.reviewed.value = false },
             label = { Text("Test date * · YYYY-MM-DD") }, singleLine = true,
             isError = date.isNotBlank() && HealthInput.dateError(date) != null,
@@ -53,13 +55,19 @@ fun ExtractedRowCard(row: ParsedLabRow, onUpdate: (ParsedLabRow) -> Unit, onDele
                 }
                 IconButton(onClick = onDelete) { Icon(Icons.Default.Close, "Remove " + row.canonicalName) }
             }
+            OutlinedTextField(row.canonicalName, { onUpdate(row.copy(testName = it.take(100), canonicalName = it.take(100))) },
+                label = { Text("Test name *") }, modifier = Modifier.fillMaxWidth(), isError = row.canonicalName.isBlank())
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilterChip(selected = row.isNumeric, onClick = { onUpdate(row.copy(isNumeric = true)) }, label = { Text("Number") })
+                FilterChip(selected = !row.isNumeric, onClick = { onUpdate(row.copy(isNumeric = false, numericValue = null)) }, label = { Text("Written result") })
+            }
             OutlinedTextField(row.value, { onUpdate(row.copy(value = it.take(160))) },
                 label = { Text("Result *") }, modifier = Modifier.fillMaxWidth(), isError = valueError,
                 supportingText = { if (valueError) Text("Enter a finite, non-negative number.") },
                 keyboardOptions = KeyboardOptions(keyboardType = if (row.isNumeric) KeyboardType.Decimal else KeyboardType.Text))
+            PickOrTypeField(row.unit, { onUpdate(row.copy(unit = it.take(40), refRangeText = "", referenceSource = null)) },
+                if (row.isNumeric) "Unit from report *" else "Unit (if printed)", com.medtrack.app.domain.validation.ReferenceCatalog.units(row.canonicalName))
             if (row.isNumeric) {
-                PickOrTypeField(row.unit, { onUpdate(row.copy(unit = it.take(40), refRangeText = "", referenceSource = null)) },
-                    "Unit from report *", com.medtrack.app.domain.validation.ReferenceCatalog.units(row.canonicalName))
                 OutlinedTextField(row.refRangeText, { onUpdate(row.copy(refRangeText = it.take(80), referenceSource = null)) },
                     label = { Text("Reference range (optional)") }, modifier = Modifier.fillMaxWidth(), isError = rangeError)
                 OutlinedButton(onClick = { onUpdate(row.copy(refRangeText = "", referenceSource = null)) }) { Text("Skip range") }
@@ -74,8 +82,14 @@ fun ExtractedRowCard(row: ParsedLabRow, onUpdate: (ParsedLabRow) -> Unit, onDele
 fun SaveReportBar(viewModel: ReportViewModel, enabled: Boolean = true, onSave: () -> Unit) {
     val saving by viewModel.saving.collectAsState()
     val error by viewModel.error.collectAsState()
+    val photo by viewModel.selectedImageUri.collectAsState()
+    val reviewed by viewModel.reviewed.collectAsState()
     Surface(shadowElevation = 6.dp) {
         Column(Modifier.fillMaxWidth().navigationBarsPadding().imePadding().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            if (photo != null) Row(verticalAlignment = Alignment.CenterVertically) {
+                Checkbox(checked = reviewed, enabled = !saving, onCheckedChange = { viewModel.reviewed.value = it })
+                Text("I checked the patient, date and every result against the photo.", style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+            }
             error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
             Button(onClick = onSave, enabled = enabled && !saving && viewModel.extractedRows.isNotEmpty(), modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp), shape = RoundedCornerShape(16.dp)) {
                 Text(if (saving) "Saving on this device…" else "Save " + viewModel.extractedRows.size + " results")

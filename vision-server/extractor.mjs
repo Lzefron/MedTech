@@ -38,8 +38,8 @@ export function validateOutput(data) {
 export function readRoutes(raw) {
   let routes;
   try { routes = JSON.parse(raw || '[]'); } catch { throw new Error('GEMINI_ROUTES_JSON must be valid JSON.'); }
-  if (!Array.isArray(routes) || !routes.length || routes.length > 6 || routes.some(r => !r || typeof r.project !== 'string' || !/^[a-zA-Z0-9_-]{1,100}$/.test(r.project) || typeof r.key !== 'string' || r.key.length < 20 || !/^gemini-[a-z0-9.-]+$/.test(r.model))) {
-    throw new Error('Set GEMINI_ROUTES_JSON to 1–6 valid project/key/model routes.');
+  if (!Array.isArray(routes) || !routes.length || routes.length > 8 || routes.some(r => !r || typeof r.project !== 'string' || !/^[a-zA-Z0-9_-]{1,100}$/.test(r.project) || typeof r.key !== 'string' || r.key.length < 20 || !/^gemini-[a-z0-9.-]+$/.test(r.model))) {
+    throw new Error('Set GEMINI_ROUTES_JSON to 1–8 valid project/key/model routes.');
   }
   return routes;
 }
@@ -47,17 +47,17 @@ export function readRoutes(raw) {
 export function createExtractor(routes, fetchImpl = fetch, now = Date.now) {
   const cooldown = new Map();
   return async function extract(image, signal) {
-    let attempts = 0;
+    signal = AbortSignal.any([signal, AbortSignal.timeout(80000)]);
     for (const route of routes) {
+      if (signal.aborted) throw new VisionError(504, 'Vision request timed out or was cancelled.');
       if ((cooldown.get(route.project) || 0) > now()) continue;
-      if (++attempts > 3) break;
       let response;
       try {
         response = await fetchImpl(`https://generativelanguage.googleapis.com/v1beta/models/${route.model}:generateContent`, {
           method: 'POST', redirect: 'error', signal: AbortSignal.any([signal, AbortSignal.timeout(25000)]),
           headers: { 'content-type': 'application/json', 'x-goog-api-key': route.key },
           body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }, { inline_data: { mime_type: image.mimeType, data: image.image } }] }],
-            generationConfig: { temperature: 0, maxOutputTokens: 16000, responseFormat: { text: { mimeType: 'application/json', schema } } } })
+            generationConfig: { temperature: 0, maxOutputTokens: 16000, responseFormat: { text: { mimeType: 'APPLICATION_JSON', schema } } } })
         });
       } catch {
         if (signal.aborted) throw new VisionError(504, 'Vision request timed out or was cancelled.');
@@ -77,9 +77,11 @@ export function createExtractor(routes, fetchImpl = fetch, now = Date.now) {
         if (candidate?.finishReason !== 'STOP') throw new Error('Incomplete response');
         const content = candidate.content?.parts?.filter(p => typeof p.text === 'string' && !p.thought).map(p => p.text).join('');
         const result = validateOutput(JSON.parse(content));
+        if (signal.aborted) throw new Error('Request cancelled');
         return { ...result, source: `Gemini · ${route.model}` };
       } catch { /* Try the next configured route; never return half-parsed output. */ }
     }
+    if (signal.aborted) throw new VisionError(504, 'Vision request timed out or was cancelled.');
     throw new VisionError(503, 'Vision services are unavailable or returned unreadable output. Your local results are unchanged; edit them manually or try later.');
   };
 }

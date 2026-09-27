@@ -6,6 +6,32 @@ const route = (project, key = 'a'.repeat(32)) => ({ project, key, model: 'gemini
 const data = { rawText: 'Hb 14', date: '2024-01-01', laboratory: '', title: '', rows: [{ name: 'Hb', value: '14', unit: 'g/dL', reference: '', kind: 'number', warning: '' }] };
 const ok = (value = data) => new Response(JSON.stringify({ candidates: [{ finishReason: 'STOP', content: { parts: [{ text: JSON.stringify(value) }] } }] }), { status: 200 });
 const image = { mimeType: 'image/jpeg', image: '/9j/AA==' };
+test('REST request uses the JSON response format enum', async () => {
+  const extract = createExtractor([route('one')], async (_, options) => {
+    const body = JSON.parse(options.body);
+    assert.equal(body.generationConfig.responseFormat.text.mimeType, 'APPLICATION_JSON');
+    return ok();
+  });
+  await extract(image, new AbortController().signal);
+});
+test('all eight configured credentials are reachable during failover', async () => {
+  const routes = readRoutes(JSON.stringify(Array.from({ length: 8 }, (_, i) => route('one', String(i).repeat(32)))));
+  let calls = 0;
+  const extract = createExtractor(routes, async () => ++calls < 8 ? new Response('', { status: 401 }) : ok());
+  assert.equal((await extract(image, new AbortController().signal)).rows[0].value, '14');
+  assert.equal(calls, 8);
+  assert.throws(() => readRoutes(JSON.stringify([...routes, route('two')])));
+});
+
+test('cancellation stops failover before another provider receives the photo', async () => {
+  const controller = new AbortController();
+  let calls = 0;
+  const extract = createExtractor([route('one'), route('two')], async () => {
+    calls++; controller.abort(); return new Response('', { status: 503 });
+  });
+  await assert.rejects(extract(image, controller.signal), e => e.status === 504);
+  assert.equal(calls, 1);
+});
 test('tries a backup credential after authentication failure', async () => {
   let calls = 0;
   const extract = createExtractor([route('one'), route('one', 'b'.repeat(32))], async () => ++calls === 1 ? new Response('', { status: 401 }) : ok());

@@ -19,7 +19,7 @@ Set these using your hosting provider's secret manager/environment configuration
 | Setting | Meaning |
 | --- | --- |
 | `GEMINI_PAID_CONFIRMED` | `true` after checking that your Gemini project has billing enabled and reviewing its terms |
-| `GEMINI_ROUTES_JSON` | Ordered JSON array of `{ "project": "your-project-id", "key": "YOUR_SECRET_KEY", "model": "gemini-3.8-flash" }` objects; 1–6 routes |
+| `GEMINI_ROUTES_JSON` | Ordered JSON array of `{ "project": "your-project-id", "key": "YOUR_SECRET_KEY", "model": "gemini-3.8-flash" }` objects; 1–8 routes |
 | `MEDTRACK_ACCESS_TOKENS` | Comma-separated random per-device tokens, at least 32 characters each; keep private and revoke by removing a token |
 | `HOST` | Defaults to `127.0.0.1`; use `0.0.0.0` in a container |
 | `PORT` | Defaults to `8080` |
@@ -34,7 +34,7 @@ This repository does not contain a deployed endpoint or provider credentials. Li
 
 ## Failure behavior
 
-- At most three provider attempts per request; 25-second attempt timeout and an 85-second gateway deadline.
+- Each of up to eight configured credentials can be tried once per request; 25-second attempt timeout, an 80-second extraction deadline and an 85-second gateway deadline. Slow failures may exhaust the deadline before every credential is tried. Cancellation stops further attempts.
 - Invalid credentials, unavailable models, transient network/server failures and malformed/truncated model output try the next configured route.
 - A 429 response puts the **whole project** into cooldown, honoring `Retry-After` with a minimum of 60 seconds. Other keys from that same project are skipped. Multiple keys do not create extra quota. Only configure legitimately authorized backup projects; this is resilience, not a quota bypass.
 - Other rejected requests stop rather than repeatedly spending quota. Full Gemini outages ultimately fall back to existing local fields/manual entry.

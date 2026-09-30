@@ -1,8 +1,8 @@
 # MedTrack Privacy Policy
 
-**Effective date: September 25, 2026**
+**Effective date: September 30, 2026**
 
-MedTrack is a personal health-record organizer for Android. This policy describes the behavior of version 1.2.0.
+MedTrack is a personal health-record organizer for Android. This policy describes the behavior of version 1.2.1.
 
 ## Data handled by the app
 
@@ -10,15 +10,11 @@ Users may enter profile details, laboratory results, medicine schedules, emergen
 
 ## Data collection and sharing
 
-Local report reading runs on the device. MedTrack does not include advertising, analytics or cloud synchronization. Without configuring and approving optional AI reading, report photos and health records are not uploaded.
-
-If you configure a private AI gateway and choose **Send this photo**, the app sends the entire selected photo, including any patient information visible in it, to that gateway and Google Gemini for transcription. No other saved reports are sent. The destination is shown before upload. Use only a trusted gateway with billing-enabled Gemini services and the patient's permission. Google and the selected hosting provider have their own data-processing and retention policies. Google's [Gemini terms](https://ai.google.dev/gemini-api/terms) describe its paid-service handling; the app cannot delete copies retained by external providers.
-
-The supplied gateway does not store images or log request contents. Its operator must configure the hosting platform accordingly. The response is shown as editable fields; saving remains a user action. Recognized text is saved locally as unverified transcription alongside the reviewed results and original photo.
+Report reading runs entirely on the device. MedTrack does not upload report photos or health records and does not include advertising, analytics or cloud synchronization. Recognized text is saved locally as unverified transcription alongside the reviewed results and original photo.
 
 ## Permissions
 
-The app may use a camera application or photo picker when the user chooses a report image. Internet permission supports optional AI reading through HTTPS. It requests notification permission when the user enables medicine reminders. Exported PDF files and files deliberately shared by the user leave app-private storage under the user's control.
+The app may use a camera application or photo picker when the user chooses a report image. This release does not request internet permission. It requests notification permission when the user enables medicine reminders. Exported PDF files and files deliberately shared by the user leave app-private storage under the user's control.
 
 ## Retention and deletion
 
@@ -26,7 +22,7 @@ Records remain on the device until the user deletes the corresponding report or 
 
 ## Security
 
-Application data uses Android app-private storage. Gateway access tokens are encrypted with Android Keystore; provider API keys stay on the gateway. **Disconnect AI** removes the saved connection and token. Users should protect access to their device. The profile chooser is not an authentication mechanism; the app does not provide a separate PIN or biometric lock.
+Application data uses Android app-private storage. No API key or gateway configuration is required. Users should protect access to their device. The profile chooser is not an authentication mechanism; the app does not provide a separate PIN or biometric lock.
 
 ## Children
 

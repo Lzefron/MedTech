@@ -10,7 +10,7 @@
 
 MedTrack keeps lab reports, trends, prescribed medicines, and emergency summaries together on the Android device. No account, API key, or remote database is required for its core features.
 
-[Download the latest APK](https://github.com/Lzefron/MedTech/releases/latest/download/MedTrack-v1.2.0.apk) · [View all release files](https://github.com/Lzefron/MedTech/releases/latest) · [View automated builds](https://github.com/Lzefron/MedTech/actions)
+[Download the latest APK](https://github.com/Lzefron/MedTech/releases/latest/download/MedTrack-v1.2.1.apk) · [View all release files](https://github.com/Lzefron/MedTech/releases/latest) · [View automated builds](https://github.com/Lzefron/MedTech/actions)
 
 </div>
 
@@ -29,7 +29,7 @@ MedTrack keeps lab reports, trends, prescribed medicines, and emergency summarie
 
 ## What it does
 
-Version 1.2 fills editable fields from report photos, keeps partial readings for correction, improves date detection and saves the original photo plus recognized text. You can add missing tests on the same screen. Optional Gemini reading fills gaps through a private gateway, with explicit photo-upload consent and server-side failover. See [AI setup and limitations](vision-server/README.md).
+Version 1.2.1 removes API configuration and cloud-reading controls. Scanning runs entirely on the phone, fills editable fields, and keeps partial readings for correction. Add missing tests on the same screen, then save the original photo and recognized text with the reviewed results. No API key, account or hosting is needed.
 
 Manual entry keeps prominent Today and Skip actions, editable units and sourced adult ranges. See [reference sources and coverage](docs/REFERENCE_RANGES.md).
 
@@ -45,7 +45,7 @@ Manual entry keeps prominent Today and Skip actions, editable units and sourced 
 ## Install on an Android phone
 
 1. Open [Releases](https://github.com/Lzefron/MedTech/releases/latest) while signed in to GitHub.
-2. Under **Assets**, download `MedTrack-v1.2.0.apk`. The `.aab` file is only for Google Play Console and cannot be installed directly.
+2. Under **Assets**, download `MedTrack-v1.2.1.apk`. The `.aab` file is only for Google Play Console and cannot be installed directly.
 3. Open the downloaded file on the phone.
 4. If Android asks, allow that browser or file manager to install unknown apps, then choose **Install**.
 
@@ -53,17 +53,17 @@ The current build supports Android 8.0 (API 26) and newer. Installing an update 
 
 ## Google Play package
 
-Upload **`MedTrack-v1.2.0.aab`** from the latest GitHub Release to Play Console. Its application ID is **`com.medtrack.app`**, version code is **3**, and version name is **1.2.0**. Do not upload the APK when creating a new Play Store app.
+Upload **`MedTrack-v1.2.1.aab`** from the latest GitHub Release to Play Console. Its application ID is **`com.medtrack.app`**, version code is **4**, and version name is **1.2.1**. Do not upload the APK when creating a new Play Store app.
 
 The bundle is signed with the private upload key kept outside this repository. See [`docs/PLAY_STORE.md`](docs/PLAY_STORE.md) for the exact release steps, required declarations, and future versioning rules.
 
 ## Privacy and safety
 
-Room/SQLite data and copied report images remain in app-private storage. Android backup is disabled. Optional AI reading uploads only the selected photo after explicit confirmation, to your configured gateway and Google Gemini. Provider keys stay on the server. No analytics or advertising SDK is included. See [privacy policy](PRIVACY.md).
+Room/SQLite data and copied report images remain in app-private storage. Android backup is disabled. The release has no internet permission and does not upload report photos. No analytics or advertising SDK is included. See [privacy policy](PRIVACY.md).
 
 MedTrack is a personal record-organizing tool, not a medical device. It does not diagnose conditions, prescribe treatment, or replace a clinician. Missing reference ranges remain **not assessed** rather than being labeled normal. OCR output always requires human review.
 
-Offline recognition is strongest on clear printed reports. Difficult handwriting, blurry images, Bangla text and unusual layouts may still be misread by local OCR or AI. AI is disabled until you configure the optional gateway; live model accuracy needs evaluation on representative reports. A scan is a draft until you review and save it.
+Offline recognition is strongest on clear printed reports. Difficult handwriting, blurry images, Bangla text and unusual layouts may still be misread. A scan is a draft until you review and save it.
 
 ## Build locally
 
@@ -95,11 +95,11 @@ The QA application uses the separate `com.medtrack.app.qa` package, so its test 
 
 ## Verification
 
-- Version 1.2 verification: 43 JVM tests, 13 Android emulator tests and 7 gateway tests pass.
+- Version 1.2.1 verification: 43 JVM tests and 5 focused Android emulator tests pass, covering offline OCR, editable fields, saving, local storage and absence of API controls/internet permission. The earlier 1.2 release also passed the full 13-test emulator suite.
 - JVM coverage includes parser recovery, date selection, unit preservation and safe merging of AI suggestions.
 - Android emulator coverage includes six-row OCR, manual corrections, saving the photo and recognized text, and upgrading existing records.
 - Gateway tests simulate failed credentials, shared project quotas, malformed output and exhausted providers; no live key is needed.
-- Android lint completes with 0 errors.
+- Android lint completes with 0 errors (27 existing warnings).
 - Emulator coverage includes first-run profile creation, repeated profile selection, profile isolation, invalid input, transactional rollback, copied-photo retention, on-device printed OCR, and multipage PDF export.
 
 ## Technology
@@ -112,7 +112,7 @@ The QA application uses the separate `com.medtrack.app.qa` package, so its test 
 
 ## Future services
 
-The local app does not need a server. The optional [vision gateway](vision-server/README.md) needs HTTPS hosting and billing-enabled Gemini credentials, but no database. Before public deployment, add managed per-user authentication and shared usage limits. Cross-device synchronization would require an encrypted remote database, conflict handling and deletion controls. Current medicine interaction information would require a licensed, maintained drug-information provider.
+The app does not need a server. The experimental [vision gateway](vision-server/README.md) remains in the repository for future development but is not connected to version 1.2.1. Cross-device synchronization would require an encrypted remote database, conflict handling and deletion controls. Current medicine interaction information would require a licensed, maintained drug-information provider.
 
 ## Project notes
 

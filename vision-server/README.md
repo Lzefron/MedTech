@@ -1,5 +1,7 @@
 # MedTrack optional vision gateway
 
+> Experimental backend retained for future development. The offline Android release 1.2.1 does not connect to this service. Phone connection instructions below apply only to the earlier 1.2.0 build.
+
 The app works offline without this service. When local OCR misses a row, the user can approve sending **one photo** to a private HTTPS gateway, which calls Gemini and returns editable fields. No database is needed on the server. The user reviews the extraction before saving it locally.
 
 ## Recommended API

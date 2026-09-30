@@ -65,6 +65,11 @@ class ProfileFlowTest {
             vm.startOcrProcessing(app, android.net.Uri.fromFile(file))
         }
         compose.waitUntil(60000) { vm.ocrState.value is com.medtrack.app.ui.screens.report.OcrUiState.Success }
+        compose.onNodeWithText("AI connection").assertDoesNotExist()
+        compose.onNode(hasScrollAction()).performScrollToNode(hasText("Add a result manually"))
+        compose.onNodeWithText("Try AI for missing or unclear fields").assertDoesNotExist()
+        val permissions = app.packageManager.getPackageInfo(app.packageName, android.content.pm.PackageManager.GET_PERMISSIONS).requestedPermissions.orEmpty()
+        assertFalse(permissions.contains("android.permission.INTERNET"))
         compose.onNode(hasScrollAction()).performScrollToNode(hasText("Result *"))
         compose.onNodeWithText("Result *").performScrollTo().assertTextContains("14.2").performTextReplacement("13.8")
         compose.onNodeWithText("Test name *").performScrollTo().assertTextContains("Hemoglobin")

@@ -18,12 +18,12 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.medtrack.app"
+        applicationId = "com.lzefron.medtrack"
         manifestPlaceholders["appLabel"] = "@string/app_name"
         minSdk = 26
         targetSdk = 36
-        versionCode = 4
-        versionName = "1.2.1"
+        versionCode = 5
+        versionName = "1.2.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {

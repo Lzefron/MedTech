@@ -1,8 +1,8 @@
 # MedTrack Privacy Policy
 
-**Effective date: September 30, 2026**
+**Effective date: October 1, 2026**
 
-MedTrack is a personal health-record organizer for Android. This policy describes the behavior of version 1.2.1.
+MedTrack is a personal health-record organizer for Android. This policy describes the behavior of version 1.2.2.
 
 ## Data handled by the app
 

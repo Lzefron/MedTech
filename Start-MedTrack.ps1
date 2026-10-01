@@ -27,7 +27,7 @@ if (!($devices -match '^emulator-5580\s+device')) {
     if (!(Test-Path -LiteralPath (Join-Path $env:ANDROID_SDK_ROOT 'system-images\android-35\default\x86_64\kernel-ranchu'))) {
         throw "The verified emulator image is missing from $env:ANDROID_SDK_ROOT."
     }
-    Start-Process -FilePath $emulator -ArgumentList @('-avd','MedTrackReview','-port','5580','-no-snapshot','-no-boot-anim','-gpu','swiftshader_indirect') -WindowStyle Normal -RedirectStandardOutput (Join-Path $workRoot 'emulator.log') -RedirectStandardError (Join-Path $workRoot 'emulator-error.log')
+    Start-Process -FilePath $emulator -ArgumentList @('-avd','MedTrackReview','-port','5580','-no-snapshot','-no-boot-anim','-gpu','swiftshader_indirect') -WindowStyle Hidden -RedirectStandardOutput (Join-Path $workRoot 'emulator.log') -RedirectStandardError (Join-Path $workRoot 'emulator-error.log')
 }
 $ready = $false
 for ($attempt = 0; $attempt -lt 120; $attempt++) {
@@ -38,5 +38,5 @@ for ($attempt = 0; $attempt -lt 120; $attempt++) {
 if (!$ready) { throw "Emulator did not finish booting. Check $(Join-Path $workRoot 'emulator-error.log')." }
 & $adb -s $serial install -r $apk
 if ($LASTEXITCODE -ne 0) { throw 'App installation failed.' }
-& $adb -s $serial shell am start -n com.medtrack.app/.MainActivity
+& $adb -s $serial shell am start -n com.lzefron.medtrack/com.medtrack.app.MainActivity
 Write-Output 'MedTrack is running in the MedTrackReview emulator.'

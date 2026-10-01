@@ -2,33 +2,35 @@
 
 ## File to upload
 
-Upload `MedTrack-v1.2.1.aab` from the [latest GitHub Release](https://github.com/Lzefron/MedTech/releases/latest). Do not upload the APK for a new Play Store application. The APK is provided for direct installation outside Google Play.
+Upload `MedTrack-v1.2.2.aab` from the [latest GitHub Release](https://github.com/Lzefron/MedTech/releases/latest). Do not upload the APK for a new Play Store application. The APK is provided for direct installation outside Google Play.
 
 | Property | Value |
 | --- | --- |
-| Application ID / package name | `com.medtrack.app` |
-| Version code | `4` |
-| Version name | `1.2.1` |
+| Application ID / package name | `com.lzefron.medtrack` |
+| Version code | `5` |
+| Version name | `1.2.2` |
 | Minimum Android version | Android 8.0 / API 26 |
 | Target SDK | API 36 |
 
 The AAB is signed with the MedTrack upload key. Enroll in Play App Signing during the first release; Google then manages the app-signing key while this upload key verifies future bundles.
+
+Version 1.2.2 changes the package from `com.medtrack.app` to `com.lzefron.medtrack` to match the publisher's new Play Console app. Upload only the 1.2.2 AAB to that app. On phones, this package installs separately from earlier builds and does not automatically migrate their private records; retain the old app and export any needed PDF summaries.
 
 ## Play Console steps
 
 1. Create the app in Play Console and use the package name above.
 2. Complete the main store listing, content rating, target audience, ads declaration, app access, data safety, and the Health apps declaration.
 3. Add a publicly accessible privacy-policy URL. The repository includes [`PRIVACY.md`](../PRIVACY.md) as the prepared policy text, but a private GitHub file is not a public policy URL.
-4. Go to **Test and release → Testing → Internal testing** first, choose **Create new release**, enable Play App Signing, and upload `MedTrack-v1.2.1.aab`.
+4. Go to **Test and release → Testing → Internal testing** first, choose **Create new release**, enable Play App Signing, and upload `MedTrack-v1.2.2.aab`.
 5. Add release notes, save, review the release, and invite testers. After verifying the Play-delivered build, promote it through the required testing track and then to production.
 
-Google requires every published app to complete the Health apps declaration. MedTrack provides health-record management features, so declare those features accurately; do not select “no health features.” Version 1.2.1 performs report reading and storage on the device, removes cloud upload controls, and has no internet permission. Complete Data safety answers according to this shipped version and any services you add; deliberate user exports remain available. Publish the updated privacy policy.
+Google requires every published app to complete the Health apps declaration. MedTrack provides health-record management features, so declare those features accurately; do not select “no health features.” Version 1.2.2 performs report reading and storage on the device, removes cloud upload controls, and has no internet permission. Complete Data safety answers according to this shipped version and any services you add; deliberate user exports remain available. Publish the updated privacy policy.
 
 New personal Play developer accounts may have to meet Google's closed-testing requirement before production access is available. Play Console will show the requirement for the account.
 
 ## Future updates
 
-- Keep the package name `com.medtrack.app` unchanged.
+- Keep the package name `com.lzefron.medtrack` unchanged.
 - Increase `versionCode` for every uploaded bundle (2, 3, 4, and so on).
 - Update `versionName` for the user-visible release number.
 - Sign every bundle with the same private upload key.

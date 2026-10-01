@@ -10,7 +10,7 @@
 
 MedTrack keeps lab reports, trends, prescribed medicines, and emergency summaries together on the Android device. No account, API key, or remote database is required for its core features.
 
-[Download the latest APK](https://github.com/Lzefron/MedTech/releases/latest/download/MedTrack-v1.2.1.apk) · [View all release files](https://github.com/Lzefron/MedTech/releases/latest) · [View automated builds](https://github.com/Lzefron/MedTech/actions)
+[Download the latest APK](https://github.com/Lzefron/MedTech/releases/latest/download/MedTrack-v1.2.2.apk) · [View all release files](https://github.com/Lzefron/MedTech/releases/latest) · [View automated builds](https://github.com/Lzefron/MedTech/actions)
 
 </div>
 
@@ -29,7 +29,7 @@ MedTrack keeps lab reports, trends, prescribed medicines, and emergency summarie
 
 ## What it does
 
-Version 1.2.1 removes API configuration and cloud-reading controls. Scanning runs entirely on the phone, fills editable fields, and keeps partial readings for correction. Add missing tests on the same screen, then save the original photo and recognized text with the reviewed results. No API key, account or hosting is needed.
+Version 1.2.2 uses the Play Console package `com.lzefron.medtrack`. Scanning runs entirely on the phone, fills editable fields, and keeps partial readings for correction. Add missing tests on the same screen, then save the original photo and recognized text with the reviewed results. No API key, account or hosting is needed.
 
 Manual entry keeps prominent Today and Skip actions, editable units and sourced adult ranges. See [reference sources and coverage](docs/REFERENCE_RANGES.md).
 
@@ -45,15 +45,15 @@ Manual entry keeps prominent Today and Skip actions, editable units and sourced 
 ## Install on an Android phone
 
 1. Open [Releases](https://github.com/Lzefron/MedTech/releases/latest) while signed in to GitHub.
-2. Under **Assets**, download `MedTrack-v1.2.1.apk`. The `.aab` file is only for Google Play Console and cannot be installed directly.
+2. Under **Assets**, download `MedTrack-v1.2.2.apk`. The `.aab` file is only for Google Play Console and cannot be installed directly.
 3. Open the downloaded file on the phone.
 4. If Android asks, allow that browser or file manager to install unknown apps, then choose **Install**.
 
-The current build supports Android 8.0 (API 26) and newer. Installing an update over the existing app preserves local records. Uninstalling the app or clearing its storage removes them.
+The current build supports Android 8.0 (API 26) and newer. Version 1.2.2 uses the new Play Console package `com.lzefron.medtrack`. It installs separately from 1.2.1 and earlier (`com.medtrack.app`), and cannot automatically read their private records. Keep the old app installed if it contains records you need; export its PDF summary for reference. Updates within the new package preserve local records. Uninstalling an app or clearing its storage removes its records.
 
 ## Google Play package
 
-Upload **`MedTrack-v1.2.1.aab`** from the latest GitHub Release to Play Console. Its application ID is **`com.medtrack.app`**, version code is **4**, and version name is **1.2.1**. Do not upload the APK when creating a new Play Store app.
+Upload **`MedTrack-v1.2.2.aab`** from the latest GitHub Release to Play Console. Its application ID is **`com.lzefron.medtrack`**, version code is **5**, and version name is **1.2.2**. Do not upload the APK when creating a new Play Store app.
 
 The bundle is signed with the private upload key kept outside this repository. See [`docs/PLAY_STORE.md`](docs/PLAY_STORE.md) for the exact release steps, required declarations, and future versioning rules.
 
@@ -91,11 +91,11 @@ To run the isolated Android emulator tests:
 ./gradlew.bat :app:connectedQaAndroidTest
 ```
 
-The QA application uses the separate `com.medtrack.app.qa` package, so its test cleanup does not touch records in the main app.
+The QA application uses the separate `com.lzefron.medtrack.qa` package, so its test cleanup does not touch records in the main app.
 
 ## Verification
 
-- Version 1.2.1 verification: 43 JVM tests and 5 focused Android emulator tests pass, covering offline OCR, editable fields, saving, local storage and absence of API controls/internet permission. The earlier 1.2 release also passed the full 13-test emulator suite.
+- Version 1.2.2 verification: 43 JVM tests and all 13 Android emulator tests pass under the new package, covering profile flows, offline OCR, editable fields, saving, local storage, database migration and PDF export. The scan test checks absence of API controls and internet permission.
 - JVM coverage includes parser recovery, date selection, unit preservation and safe merging of AI suggestions.
 - Android emulator coverage includes six-row OCR, manual corrections, saving the photo and recognized text, and upgrading existing records.
 - Gateway tests simulate failed credentials, shared project quotas, malformed output and exhausted providers; no live key is needed.
@@ -112,7 +112,7 @@ The QA application uses the separate `com.medtrack.app.qa` package, so its test 
 
 ## Future services
 
-The app does not need a server. The experimental [vision gateway](vision-server/README.md) remains in the repository for future development but is not connected to version 1.2.1. Cross-device synchronization would require an encrypted remote database, conflict handling and deletion controls. Current medicine interaction information would require a licensed, maintained drug-information provider.
+The app does not need a server. The experimental [vision gateway](vision-server/README.md) remains in the repository for future development but is not connected to version 1.2.2. Cross-device synchronization would require an encrypted remote database, conflict handling and deletion controls. Current medicine interaction information would require a licensed, maintained drug-information provider.
 
 ## Project notes
 

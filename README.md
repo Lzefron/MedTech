@@ -10,7 +10,7 @@
 
 MedTrack keeps lab reports, trends, prescribed medicines, and emergency summaries together on the Android device. No account, API key, or remote database is required for its core features.
 
-[Download the latest APK](https://github.com/Lzefron/MedTech/releases/latest/download/MedTrack-v1.2.2.apk) Â· [View all release files](https://github.com/Lzefron/MedTech/releases/latest) Â· [View automated builds](https://github.com/Lzefron/MedTech/actions)
+[Download the latest APK](https://github.com/Lzefron/MedTech/releases/latest/download/MedTrack-v1.2.3.apk) Â· [View all release files](https://github.com/Lzefron/MedTech/releases/latest) Â· [View automated builds](https://github.com/Lzefron/MedTech/actions)
 
 </div>
 
@@ -45,7 +45,7 @@ Manual entry keeps prominent Today and Skip actions, editable units and sourced 
 ## Install on an Android phone
 
 1. Open [Releases](https://github.com/Lzefron/MedTech/releases/latest) while signed in to GitHub.
-2. Under **Assets**, download `MedTrack-v1.2.2.apk`. The `.aab` file is only for Google Play Console and cannot be installed directly.
+2. Under **Assets**, download `MedTrack-v1.2.3.apk`. The `.aab` file is only for Google Play Console and cannot be installed directly.
 3. Open the downloaded file on the phone.
 4. If Android asks, allow that browser or file manager to install unknown apps, then choose **Install**.
 
@@ -53,13 +53,13 @@ The current build supports Android 8.0 (API 26) and newer. Version 1.2.2 uses th
 
 ## Google Play package
 
-Upload **`MedTrack-v1.2.2.aab`** from the latest GitHub Release to Play Console. Its application ID is **`com.lzefron.medtrack`**, version code is **5**, and version name is **1.2.2**. Do not upload the APK when creating a new Play Store app.
+Upload **`MedTrack-v1.2.3.aab`** from the latest GitHub Release to Play Console. Its application ID is **`com.lzefron.medtrack`**, version code is **6**, and version name is **1.2.3**. Do not upload the APK when creating a new Play Store app.
 
 The bundle is signed with the private upload key kept outside this repository. See [`docs/PLAY_STORE.md`](docs/PLAY_STORE.md) for the exact release steps, required declarations, and future versioning rules.
 
 ## Privacy and safety
 
-Room/SQLite data and copied report images remain in app-private storage. Android backup is disabled. The release has no internet permission and does not upload report photos. No analytics or advertising SDK is included. See [privacy policy](PRIVACY.md).
+Room/SQLite data and copied report images remain in app-private storage. Android backup is disabled. The release has no internet permission and does not upload report photos. No analytics or advertising SDK is included. Open **Privacy policy** on the profile screen or read the [public privacy policy](https://lzefron.github.io/MedTech/).
 
 MedTrack is a personal record-organizing tool, not a medical device. It does not diagnose conditions, prescribe treatment, or replace a clinician. Missing reference ranges remain **not assessed** rather than being labeled normal. OCR output always requires human review.
 

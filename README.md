@@ -10,12 +10,12 @@
 
 MedTrack keeps lab reports, trends, prescribed medicines, and emergency summaries together on the Android device. No account, API key, or remote database is required for its core features.
 
-[Download the latest APK](https://github.com/Lzefron/MedTech/releases/latest/download/MedTrack-v1.2.2.apk) · [View all release files](https://github.com/Lzefron/MedTech/releases/latest) · [View automated builds](https://github.com/Lzefron/MedTech/actions)
+[Download the latest APK](https://github.com/Lzefron/MedTech/releases/latest/download/MedTrack-v1.2.2.apk) Â· [View all release files](https://github.com/Lzefron/MedTech/releases/latest) Â· [View automated builds](https://github.com/Lzefron/MedTech/actions)
 
 </div>
 
 > [!NOTE]
-> This repository is private. GitHub will ask you to sign in with an account that has access before downloading a Release or Actions artifact.
+> This repository and its Release downloads are public. Health records stay on the device; never upload patient reports or credentials to issues, pull requests or Releases. See [repository security](SECURITY.md).
 
 ## Preview
 

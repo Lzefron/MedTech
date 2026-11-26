@@ -23,3 +23,29 @@ fake_mounts
 /release-secrets/
 *.jks
 *.keystore
+
+# Local credentials, signing exports and encrypted credential caches.
+keystore.properties
+*.jceks
+*.p12
+*.pfx
+*.pem
+*.key
+*.dpapi.json
+private-vision/
+
+# Patient data and local exports must never enter source control.
+*.db
+*.db-*
+*.sqlite
+*.sqlite-*
+*.sqlite3
+*.sqlite3-*
+*.pdf
+patient-data/
+private-reports/
+
+# Local audit output and process logs can contain sensitive context.
+audit-results/
+*.log
+__pycache__/

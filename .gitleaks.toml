@@ -1,0 +1,12 @@
+title = "MedTrack repository secret detection"
+
+[extend]
+useDefault = true
+
+# Auth keys from Google AI Studio also use AQ.; the standard Google-key
+# rule alone does not cover this format. Never whitelist real credentials.
+[[rules]]
+id = "gemini-auth-key"
+description = "Google Gemini auth key"
+regex = '''\bAQ\.[A-Za-z0-9_-]{40,}'''
+keywords = ["AQ."]

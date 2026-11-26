@@ -9,6 +9,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -17,9 +18,12 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.medtrack.app.R
 import com.medtrack.app.data.local.entity.ProfileEntity
 import com.medtrack.app.domain.validation.HealthInput
 
@@ -29,6 +33,7 @@ fun ProfileLauncherScreen(viewModel: ProfileViewModel, onProfileSelected: (Long)
     val profiles by viewModel.allProfiles.collectAsState()
     val error by viewModel.error.collectAsState()
     val saving by viewModel.saving.collectAsState()
+    var showingPrivacyPolicy by rememberSaveable { mutableStateOf(false) }
     var creating by rememberSaveable { mutableStateOf(false) }
     var editing by remember { mutableStateOf<ProfileEntity?>(null) }
     var deleting by remember { mutableStateOf<ProfileEntity?>(null) }
@@ -44,7 +49,10 @@ fun ProfileLauncherScreen(viewModel: ProfileViewModel, onProfileSelected: (Long)
                         Icon(Icons.Default.HealthAndSafety, null, Modifier.padding(12.dp).size(28.dp), tint = MaterialTheme.colorScheme.onPrimary)
                     }
                     Spacer(Modifier.width(12.dp))
-                    Text("MedTrack", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                    Text("MedTrack", Modifier.weight(1f), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                    TextButton(onClick = { showingPrivacyPolicy = true }) {
+                        Text(stringResource(R.string.privacy_policy))
+                    }
                 }
             }
             item {
@@ -123,6 +131,7 @@ fun ProfileLauncherScreen(viewModel: ProfileViewModel, onProfileSelected: (Long)
             item { Text("Records stay on this phone. Uninstalling the app or clearing its storage removes them.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
         }
     }
+    if (showingPrivacyPolicy) PrivacyPolicyDialog(onDismiss = { showingPrivacyPolicy = false })
     if (creating || editing != null) {
         ProfileEditor(
             initial = editing, saving = saving, error = error,
@@ -142,6 +151,38 @@ fun ProfileLauncherScreen(viewModel: ProfileViewModel, onProfileSelected: (Long)
             confirmButton = { TextButton(onClick = { viewModel.deleteProfile(profile); deleting = null }) { Text("Delete", color = MaterialTheme.colorScheme.error) } },
             dismissButton = { TextButton(onClick = { deleting = null }) { Text("Keep profile") } })
     }
+}
+
+@Composable
+private fun PrivacyPolicyDialog(onDismiss: () -> Unit) {
+    val browser = LocalUriHandler.current
+    val policyUrl = stringResource(R.string.privacy_policy_url)
+    var browserUnavailable by remember { mutableStateOf(false) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.privacy_policy)) },
+        text = {
+            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(stringResource(R.string.privacy_policy_summary))
+                SelectionContainer { Text(policyUrl) }
+                if (browserUnavailable) {
+                    Text(stringResource(R.string.privacy_policy_browser_unavailable), color = MaterialTheme.colorScheme.error)
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                try {
+                    browser.openUri(policyUrl)
+                    browserUnavailable = false
+                } catch (_: IllegalArgumentException) {
+                    browserUnavailable = true
+                }
+            }) { Text(stringResource(R.string.privacy_policy_open)) }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.privacy_policy_close)) } }
+    )
 }
 
 @Composable

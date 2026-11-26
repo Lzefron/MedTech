@@ -6,7 +6,7 @@ title: MedTrack Privacy Policy
 
 **Effective date: November 26, 2026**
 
-MedTrack is a personal health record organiser for Android (`com.lzefron.medtrack`). This policy covers version 1.2.2.
+MedTrack is a personal health record organiser for Android (`com.lzefron.medtrack`). This policy covers versions 1.2.2 and 1.2.3.
 
 ## Data handled by the app
 
@@ -14,7 +14,7 @@ Users may enter profile details, laboratory results, medicine schedules, emergen
 
 ## Data collection and sharing
 
-Report reading runs entirely on the device. MedTrack does not upload report photos or health records and does not include advertising, analytics or cloud synchronization. Recognized text is saved locally as unverified transcription alongside the reviewed results and original photo.
+Report reading runs entirely on the device. MedTrack does not upload report photos or health records and does not include advertising, analytics or cloud synchronization. Recognized text is saved locally as unverified transcription alongside the reviewed results and original photo. You can also choose to show an emergency QR code. Anyone who scans it can read the information encoded in it.
 
 ## Permissions
 

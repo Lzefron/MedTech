@@ -1,3 +1,9 @@
 <resources>
     <string name="app_name">MedTrack</string>
+    <string name="privacy_policy">Privacy policy</string>
+    <string name="privacy_policy_url" translatable="false">https://lzefron.github.io/MedTech/</string>
+    <string name="privacy_policy_summary">MedTrack scans and stores health records on this device. You control when to share a PDF or show the emergency QR code. Delete an individual report or profile in the app, or clear app storage to remove all local records.</string>
+    <string name="privacy_policy_open">Read full policy</string>
+    <string name="privacy_policy_close">Close</string>
+    <string name="privacy_policy_browser_unavailable">Unable to open a browser. You can copy the link above.</string>
 </resources>

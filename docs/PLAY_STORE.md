@@ -20,7 +20,7 @@ Version 1.2.2 changes the package from `com.medtrack.app` to `com.lzefron.medtra
 
 1. Create the app in Play Console and use the package name above.
 2. Complete the main store listing, content rating, target audience, ads declaration, app access, data safety, and the Health apps declaration.
-3. Add a publicly accessible privacy-policy URL. The repository includes [`PRIVACY.md`](../PRIVACY.md) as the prepared policy text, but a private GitHub file is not a public policy URL.
+3. Paste the [public privacy policy](https://lzefron.github.io/MedTech/) URL into Play Console. Make the policy accessible from within the app before submitting it for review.
 4. Go to **Test and release → Testing → Internal testing** first, choose **Create new release**, enable Play App Signing, and upload `MedTrack-v1.2.2.aab`.
 5. Add release notes, save, review the release, and invite testers. After verifying the Play-delivered build, promote it through the required testing track and then to production.
 
